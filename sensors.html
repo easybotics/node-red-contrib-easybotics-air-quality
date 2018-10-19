@@ -1,0 +1,82 @@
+<script type="text/javascript">
+	RED.nodes.registerType('mux-handle', 
+		{
+			category: 'config', 
+			defaults: 
+			{
+				name: {value:""}, 
+			}, 
+			icon: "arrow-in.png", 
+			label: "MUX HANDLE",
+		});
+</script>
+
+<script type="text/x-red" data-help-name="mux-handle">
+	<p>
+		<b> Version 1.0, I bet it crashes if it can't get a hold of its serial port... </b>
+	</p> 
+</script>
+		
+
+
+<script type="text/javascript">
+	RED.nodes.registerType('mux-c02-read', 
+	{
+		category: 'LED Matrix', 
+		color: '#D7A1D1', 
+		defaults: 
+		{
+			name: {value:""},
+            handle: { type:'mux-handle', required:true},
+		},
+		inputs: 0, 
+		outputs: 1,
+		icon: "arrow-in.png", 
+		label: function()
+		{
+			return this.name || "C02 reader";
+		},
+	});
+</script>
+
+<script type="text/x-red" data-template-name="mux-c02-read">
+	<div class = "form-row">
+		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
+	</div>
+	<div class='form-row'>
+		<label for="node-config-input-handle"><i class='fa fa-tag'></i> Handle</label>
+		<input type='text' id='node-input-handle'/>
+	</div>
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('mux-PMS-read', 
+	{
+		category: 'LED Matrix', 
+		color: '#C1FF40', 
+		defaults: 
+		{
+			name: {value:""},
+            handle: { type:'mux-handle', required:true},
+		},
+		inputs: 0, 
+		outputs: 3,
+		icon: "arrow-in.png", 
+		label: function()
+		{
+			return this.name || "C02 reader";
+		},
+	});
+</script>
+
+<script type="text/x-red" data-template-name="mux-PMS-read">
+	<div class = "form-row">
+		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
+	</div>
+	<div class='form-row'>
+		<label for="node-config-input-handle"><i class='fa fa-tag'></i> Handle</label>
+		<input type='text' id='node-input-handle'/>
+	</div>
+</script>
+
+
