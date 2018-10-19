@@ -18,12 +18,16 @@
     "rpi-gpio": "1.0.0",
     "serialport": "7.0.2"
   },
-  "homepage": "https://github.com/keptan",
+  "homepage": "https://github.com/keptan/node-red-contrib-easybotics-air-quality",
   "bugs": "https://github.com/keptan",
   "author": {
     "name": "Ben",
     "email": "keptan@protonmail.com",
     "url": "https://github.com/keptan"
+  },
+  "repository": {
+	  "type": "git", 
+	  "url": "https://github.com/easybotics/node-red-contrib-easybotics-air-quality"
   },
   "main": "index.js",
   "scripts": {
