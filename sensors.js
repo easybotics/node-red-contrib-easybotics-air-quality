@@ -9,19 +9,47 @@ module.exports = function(RED) {
 
 	var port; 
 
-	function parseC02 (buffer) 
+	function C02Checksum (buffer) 
 	{
-		return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
+		const overFlow = function (i)
+		{
+			if(i >= 0 && i <= 256) return i;
+			if(i > 256) return overFlow( i - 256);
+			if(i < 0)   return overFlow(256 - (-1 * i));
+		}
+
+		var output = 0; 
+
+		for(var i = 0; i < 8; i++)
+			output = overFlow(output + buffer.readUInt8(i));
+
+		output = overFlow( 255 - output);
+
+		return output; 
 	}
+			
+
+
 
 	function Handle (config) 
 	{
 		RED.nodes.createNode(this, config);
 		const node = this;
-		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121])
+		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
+		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
 
-		node.lastC02 = 0; 
-		node.lastPMS = 0;
+		node.log("command checksum:");
+		node.log( C02Checksum( C02Command));
+
+		var zeroNext = false;
+		node.lastC02 = undefined; 
+		node.lastPMS = undefined;
+
+		node.zeroC02 = function ()
+		{
+
+			zeroNext = true;
+		}
 
 		if(!port)
 		{
@@ -30,36 +58,46 @@ module.exports = function(RED) {
 
 		function ghettoFlush ()
 		{
-			if (! (port.read(1))) return;
+			if (! (port.read(1))) return 0;
 
 			var i = 1000;
 			var inBuf = port.read(i);
 			while (!inBuf)
 				inBuf = port.read(i--);
+
+			return 1000 - i;
 		}
+
+	function parseC02 (buffer) 
+	{
+
+		if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
+		{
+			node.log("dumped c02 due to checksum");
+			return undefined;
+		}
+
+		return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
+	}
 
 		function muxA (callback)
 		{
-			gpio.write(22, 1, function()
+			gpio.write(35, 0, function()
 				{
-
-					gpio.write(35, 0, function()
+					gpio.write(22, 0, function() 
 					{
-						gpio.write(22, 0, callback)
+						port.flush(callback);
 					});
 				});
 		};
 
 		function muxB (callback)
 		{
-			gpio.write(22, 1, function()
+				gpio.write(35, 1, function()
 				{
-					port.flush( function()
+					gpio.write(22, 0, function()
 						{
-							gpio.write(35, 1, function()
-							{
-								gpio.write(22, 0, callback)
-							});
+							port.flush(callback);
 						});
 				});
 		};
@@ -75,7 +113,7 @@ module.exports = function(RED) {
 		function readPMS () 
 		{
 			const inBuf = port.read(32);
-			if(!inBuf)	return;
+			if(!inBuf)	return node.lastPMS;
 
 			var last = 66;
 			var count = -1;
@@ -92,22 +130,25 @@ module.exports = function(RED) {
 			try 
 			{
 				const fRead = Buffer.concat( [inBuf.slice(count, 32), secondary.slice(0, count)]);
+				node.log("tried concatting..");
+
 				return parsePMS(fRead);
 			}
-			catch (e) { return node.lastPMS;};
+			catch (e) 
+			{
+				node.log("caught from concatting though");
+				node.log(e);
+				return undefined;
+			};
 
 
 		}
 
-		function parseC02 (buffer) 
-		{
-			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
-		}
 
 		function readC02 ()
 		{
 			var inBuf = port.read(9);
-			if(!inBuf) return;
+			if(!inBuf) return undefined;
 
 			return parseC02(inBuf);
 		}
@@ -118,12 +159,15 @@ module.exports = function(RED) {
 			{
 				muxA(function()
 				{
+					node.log("mux a");
 					setTimeout(function()
 					{
-						node.lastPMS = readPMS();
+						node.log("reading pms");
+						const out = readPMS();
+						node.lastPMS = out;
 
-						ghettoFlush();
 						callBack(!up, count + 1, delay);
+
 					}, delay);
 				});
 			}
@@ -131,16 +175,27 @@ module.exports = function(RED) {
 			{
 				muxB(function()
 					{
-					port.write(C02Command);
-					setTimeout(function()
-					{
-						port.drain(
-						function() {
-							node.lastC02 = readC02();
-						});
+						node.log("flushed: " + ghettoFlush());
+						if(zeroNext) 
+						{
+							node.log("zeroing");
+							port.write(C02CommandZero);
+							zeroNext = false; 
+						}
 
-						callBack(!up, count + 1, delay);
-					}, delay);
+						port.write(C02Command);
+						node.log("wrote c02 command");
+						setTimeout(function()
+						{
+							port.drain(
+							function() {
+								node.log("reading c02");
+								node.lastC02 = readC02();
+							});
+
+							callBack(!up, count + 1, delay);
+						}, delay); 
+
 					});
 			}
 		}
@@ -173,6 +228,7 @@ module.exports = function(RED) {
 
 		function outRecall ()
 		{
+			if(node.handle.lastC02 != undefined)
 			node.send( {payload: node.handle.lastC02});
 
 			setTimeout(function()
@@ -181,6 +237,16 @@ module.exports = function(RED) {
 
 				}, 2000);
 		}
+
+		node.on('input', function(msg) 
+		{
+			if(msg.topic == "zero")
+			{
+				node.handle.zeroC02();
+			}
+		});
+
+
 
 		outRecall();
 
