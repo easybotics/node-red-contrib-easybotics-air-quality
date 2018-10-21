@@ -4,16 +4,15 @@ var gpio     	= require('rpi-gpio');
 
 
 
-function parseC02 (buffer) 
-{
-	return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
-}
-
 
 module.exports = function(RED) {
 
 	var port; 
 
+	function parseC02 (buffer) 
+	{
+		return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
+	}
 
 	function Handle (config) 
 	{
