@@ -29,12 +29,12 @@
 			name: {value:""},
             handle: { type:'mux-handle', required:true},
 		},
-		inputs: 0, 
+		inputs: 1, 
 		outputs: 1,
 		icon: "arrow-in.png", 
 		label: function()
 		{
-			return this.name || "C02 reader";
+			return this.name || "MH-Z19 C02";
 		},
 	});
 </script>
@@ -64,7 +64,7 @@
 		icon: "arrow-in.png", 
 		label: function()
 		{
-			return this.name || "C02 reader";
+			return this.name || "PMS5003 Particulate";
 		},
 	});
 </script>
