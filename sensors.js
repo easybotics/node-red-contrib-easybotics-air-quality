@@ -40,9 +40,6 @@ module.exports = function(RED) {
 
 		return output; 
 	}
-			
-
-
 
 	function Handle (config) 
 	{
@@ -81,17 +78,16 @@ module.exports = function(RED) {
 			return 1000 - i;
 		}
 
-	function parseC02 (buffer) 
-	{
-
-		if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
+		function parseC02 (buffer) 
 		{
-			node.log("dumped c02 due to checksum");
-			return undefined;
-		}
+			if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
+			{
+				node.log("dumped c02 due to checksum");
+				return undefined;
+			}
 
-		return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
-	}
+			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
+		}
 
 		function muxA (callback)
 		{
@@ -122,8 +118,6 @@ module.exports = function(RED) {
 
 				if(calcCheck == readCheck);
 				{
-					node.log("calcCheck: " + calcCheck);
-					node.log("realCheck: " + readCheck);
 					return { pm10: buffer.readUInt8(10) * 256 + buffer.readUInt8(11), 
 							 pm25: buffer.readUInt8(12) * 256 + buffer.readUInt8(13), 
 							 pm100: buffer.readUInt8(14) * 256 + buffer.readUInt8(15),}
@@ -163,10 +157,7 @@ module.exports = function(RED) {
 				node.log(e);
 				return undefined;
 			};
-
-
 		}
-
 
 		function readC02 ()
 		{
@@ -233,12 +224,7 @@ module.exports = function(RED) {
 
 				});
 			}); 
-
-
-
-		};
-
-
+	};
 
 
 	function C02Sensor (config) 
