@@ -9,6 +9,19 @@ module.exports = function(RED) {
 
 	var port; 
 
+	function PMSChecksum (buffer) 
+	{
+		var output = 0; 
+
+		for(var i = 0; i < 30; i++)
+		{
+			output += buffer.readUInt8(i);
+			output = output & 65535;
+		}
+
+		return output; 
+	}
+
 	function C02Checksum (buffer) 
 	{
 		const overFlow = function (i)
@@ -104,9 +117,19 @@ module.exports = function(RED) {
 
 		function parsePMS (buffer)
 		{
-				return { pm10: buffer.readUInt8(10) * 256 + buffer.readUInt8(11), 
-						 pm25: buffer.readUInt8(12) * 256 + buffer.readUInt8(13), 
-						 pm100: buffer.readUInt8(14) * 256 + buffer.readUInt8(15),}
+				const calcCheck =  PMSChecksum(buffer); 
+				const readCheck = (buffer.readUInt8(30) * 256  + buffer.readUInt8(31));
+
+				if(calcCheck == readCheck);
+				{
+					node.log("calcCheck: " + calcCheck);
+					node.log("realCheck: " + readCheck);
+					return { pm10: buffer.readUInt8(10) * 256 + buffer.readUInt8(11), 
+							 pm25: buffer.readUInt8(12) * 256 + buffer.readUInt8(13), 
+							 pm100: buffer.readUInt8(14) * 256 + buffer.readUInt8(15),}
+				}
+
+				return undefined; 
 
 		}
 
