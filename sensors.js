@@ -48,9 +48,6 @@ module.exports = function(RED) {
 		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
 		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
 
-		node.log("command checksum:");
-		node.log( C02Checksum( C02Command));
-
 		var zeroNext = false;
 		node.lastC02 = undefined; 
 		node.lastPMS = undefined;
@@ -76,6 +73,7 @@ module.exports = function(RED) {
 			while (!inBuf)
 				inBuf = port.read(i--);
 
+			//node.log("dumped: " + (1000 - i )+ " bytes");
 			return 1000 - i;
 		}
 
@@ -83,6 +81,8 @@ module.exports = function(RED) {
 		{
 			gpio.write(35, 0, function()
 				{
+
+					ghettoFlush();
 					gpio.write(22, 0, function() 
 					{
 						port.flush(callback);
@@ -94,6 +94,7 @@ module.exports = function(RED) {
 		{
 				gpio.write(35, 1, function()
 				{
+					ghettoFlush();
 					gpio.write(22, 0, function()
 						{
 							port.flush(callback);
@@ -112,6 +113,7 @@ module.exports = function(RED) {
 							 pm25: buffer.readUInt8(12) * 256 + buffer.readUInt8(13), 
 							 pm100: buffer.readUInt8(14) * 256 + buffer.readUInt8(15),}
 				}
+				node.log("dumped PMS due to checksum!");
 
 				return undefined; 
 		}
@@ -127,8 +129,9 @@ module.exports = function(RED) {
 						 m05: buffer.readUInt8(18) * 256 + buffer.readUInt8(19), 
 						 m1: buffer.readUInt8(20) * 256 + buffer.readUInt8(21),}
 			}
+			 node.log("dumped PMS due to checksum!");
 
-				return undefined; 
+			return undefined; 
 		}
 
 		function readPMS () 
@@ -165,7 +168,6 @@ module.exports = function(RED) {
 			try 
 			{
 				const fRead = Buffer.concat( [inBuf.slice(count, 32), secondary.slice(0, count)]);
-				node.log("tried concatting..");
 
 				const out = 
 				{
@@ -178,7 +180,7 @@ module.exports = function(RED) {
 			}
 			catch (e) 
 			{
-				node.log("caught from concatting though");
+				node.log("caught from concatting: though");
 				node.log(e);
 				return undefined;
 			};
@@ -188,7 +190,15 @@ module.exports = function(RED) {
 		{
 			if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
 			{
+				var bString = ""; 
+
+				for(const b of buffer)
+					bString += ("," + b);
+
+
 				node.log("dumped c02 due to checksum");
+				node.log(bString);
+				
 				return undefined;
 			}
 
@@ -209,10 +219,8 @@ module.exports = function(RED) {
 			{
 				muxA(function()
 				{
-					node.log("mux a");
 					setTimeout(function()
 					{
-						node.log("reading pms");
 						const out = readPMS();
 						if(out)
 						{
@@ -235,21 +243,18 @@ module.exports = function(RED) {
 			{
 				muxB(function()
 					{
-						node.log("flushed: " + ghettoFlush());
 						if(zeroNext) 
 						{
-							node.log("zeroing");
+							node.log("zeroing c02 sensor now..");
 							port.write(C02CommandZero);
 							zeroNext = false; 
 						}
 
 						port.write(C02Command);
-						node.log("wrote c02 command");
 						setTimeout(function()
 						{
 							port.drain(
 							function() {
-								node.log("reading c02");
 								node.lastC02 = readC02();
 							});
 
@@ -304,7 +309,6 @@ module.exports = function(RED) {
 
 
 		outRecall();
-
 	}
 
 	function PMSSensor (config)
@@ -339,10 +343,8 @@ module.exports = function(RED) {
 
 		function outRecall ()
 		{
-			node.log("instant sensor loop");
 			if(node.handle.lastPMSInstant)
 			{
-				node.log("pms isntant read");
 				node.send([ {payload: node.handle.lastPMSInstant.m03}, {payload: node.handle.lastPMSInstant.m05}, {payload: node.handle.lastPMSInstant.m1}]);
 			}
 			setTimeout(function()
@@ -356,8 +358,6 @@ module.exports = function(RED) {
 
 		outRecall();
 	}
-
-
 
 
 	RED.nodes.registerType("mux-handle", Handle);
