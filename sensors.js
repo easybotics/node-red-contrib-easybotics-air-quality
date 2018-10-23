@@ -54,6 +54,7 @@ module.exports = function(RED) {
 		var zeroNext = false;
 		node.lastC02 = undefined; 
 		node.lastPMS = undefined;
+		node.lastPMSInstant = undefined; 
 
 		node.zeroC02 = function ()
 		{
@@ -76,17 +77,6 @@ module.exports = function(RED) {
 				inBuf = port.read(i--);
 
 			return 1000 - i;
-		}
-
-		function parseC02 (buffer) 
-		{
-			if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
-			{
-				node.log("dumped c02 due to checksum");
-				return undefined;
-			}
-
-			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
 		}
 
 		function muxA (callback)
@@ -124,14 +114,30 @@ module.exports = function(RED) {
 				}
 
 				return undefined; 
+		}
 
+		function parsePMSInstant (buffer) 
+		{
+			const calcCheck =  PMSChecksum(buffer); 
+			const readCheck = (buffer.readUInt8(30) * 256  + buffer.readUInt8(31));
+
+			if(calcCheck == readCheck);
+			{
+				return { m03: buffer.readUInt8(16) * 256 + buffer.readUInt8(17), 
+						 m05: buffer.readUInt8(18) * 256 + buffer.readUInt8(19), 
+						 m1: buffer.readUInt8(20) * 256 + buffer.readUInt8(21),}
+			}
+
+				return undefined; 
 		}
 
 		function readPMS () 
 		{
+			//check if we can even get a long enough buffer, if not return NULL
 			const inBuf = port.read(32);
-			if(!inBuf)	return node.lastPMS;
+			if(!inBuf)	return undefined;
 
+			//find the head of the buffer 
 			var last = 66;
 			var count = -1;
 			for(const b of inBuf)
@@ -141,15 +147,34 @@ module.exports = function(RED) {
 				last = b;
 			}
 
-			if(count == 0) { return parsePMS(inBuf);};
+			//maybe we happen to have the head at 0
+			if(count == 0) 
+			{ 
+				const out = 
+				{
+					pms: parsePMS(inBuf), 
+					instant: parsePMSInstant(inBuf),
+				}
 
+				return out;
+
+			};
+
+			//otherwise try and read the remaining, and concat the remaining of the buffer
 			const secondary = port.read(32 - count);
 			try 
 			{
 				const fRead = Buffer.concat( [inBuf.slice(count, 32), secondary.slice(0, count)]);
 				node.log("tried concatting..");
 
-				return parsePMS(fRead);
+				const out = 
+				{
+					pms: parsePMS(fRead), 
+					instant: parsePMSInstant(fRead),
+				}
+
+				return out;
+
 			}
 			catch (e) 
 			{
@@ -157,6 +182,17 @@ module.exports = function(RED) {
 				node.log(e);
 				return undefined;
 			};
+		}
+
+		function parseC02 (buffer) 
+		{
+			if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
+			{
+				node.log("dumped c02 due to checksum");
+				return undefined;
+			}
+
+			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
 		}
 
 		function readC02 ()
@@ -178,7 +214,17 @@ module.exports = function(RED) {
 					{
 						node.log("reading pms");
 						const out = readPMS();
-						node.lastPMS = out;
+						if(out)
+						{
+							node.lastPMS = out.pms;
+							node.lastPMSInstant = out.instant;
+						}
+						else 
+						{
+							node.lastPMS = undefined;
+							node.lastPMSInstant = undefined;
+						}
+
 
 						callBack(!up, count + 1, delay);
 
@@ -284,10 +330,38 @@ module.exports = function(RED) {
 		outRecall();
 	}
 
+	function PMSInstantSensor (config) 
+	{
+		RED.nodes.createNode(this, config); 
+		const node = this;
+
+		node.handle = RED.nodes.getNode(config.handle); 
+
+		function outRecall ()
+		{
+			node.log("instant sensor loop");
+			if(node.handle.lastPMSInstant)
+			{
+				node.log("pms isntant read");
+				node.send([ {payload: node.handle.lastPMSInstant.m03}, {payload: node.handle.lastPMSInstant.m05}, {payload: node.handle.lastPMSInstant.m1}]);
+			}
+			setTimeout(function()
+				{
+					outRecall();
+
+				}, 2000);
+
+
+		}
+
+		outRecall();
+	}
+
 
 
 
 	RED.nodes.registerType("mux-handle", Handle);
 	RED.nodes.registerType("mux-c02-read", C02Sensor);
 	RED.nodes.registerType("mux-PMS-read", PMSSensor);
+	RED.nodes.registerType("mux-PMSInstant-read", PMSInstantSensor);
 }
