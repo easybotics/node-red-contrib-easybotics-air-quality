@@ -79,4 +79,51 @@
 	</div>
 </script>
 
+<script type="text/x-red" data-help-name="mux-PMS-read">
+	<p>
+		Three outputs: <br> 
+		<b> PM 1.0: </b> <br>
+		<b> PM 2.5: </b> <br>
+		<b> PM 10: </b> <br>
+	</p> 
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('mux-PMSInstant-read', 
+	{
+		category: 'LED Matrix', 
+		color: '#C1FF40', 
+		defaults: 
+		{
+			name: {value:""},
+            handle: { type:'mux-handle', required:true},
+		},
+		inputs: 0, 
+		outputs: 3,
+		icon: "arrow-in.png", 
+		label: function()
+		{
+			return this.name || "PMS5003 Particulate";
+		},
+	});
+</script>
+
+<script type="text/x-red" data-template-name="mux-PMSInstant-read">
+	<div class = "form-row">
+		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
+	</div>
+	<div class='form-row'>
+		<label for="node-config-input-handle"><i class='fa fa-tag'></i> Handle</label>
+		<input type='text' id='node-input-handle'/>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="mux-PMSInstant-read">
+	<p>
+		Three outputs: <br> 
+		<b> PM 1.0: </b> <br>
+		<b> PM 2.5: </b> <br>
+		<b> PM 10: </b> <br>
+	</p> 
+</script>
 
