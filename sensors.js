@@ -66,14 +66,21 @@ module.exports = function(RED) {
 
 		function ghettoFlush ()
 		{
-			if (! (port.read(1))) return 0;
+			if (! (port.read())) 
+			{
+				return;
+			}
 
-			var i = 1000;
+			if (! (port.read(1))) 
+			{
+				return;
+			}
+
+			var i = 2048;
 			var inBuf = port.read(i);
 			while (!inBuf)
 				inBuf = port.read(i--);
 
-			//node.log("dumped: " + (1000 - i )+ " bytes");
 			return 1000 - i;
 		}
 
@@ -81,10 +88,9 @@ module.exports = function(RED) {
 		{
 			gpio.write(35, 0, function()
 				{
-
-					ghettoFlush();
 					gpio.write(22, 0, function() 
 					{
+						ghettoFlush();
 						port.flush(callback);
 					});
 				});
@@ -94,9 +100,9 @@ module.exports = function(RED) {
 		{
 				gpio.write(35, 1, function()
 				{
-					ghettoFlush();
 					gpio.write(22, 0, function()
 						{
+							ghettoFlush();
 							port.flush(callback);
 						});
 				});
@@ -180,7 +186,7 @@ module.exports = function(RED) {
 			}
 			catch (e) 
 			{
-				node.log("caught from concatting: though");
+				node.log("caught from concatting an extra PMS buffer: though");
 				node.log(e);
 				return undefined;
 			};
