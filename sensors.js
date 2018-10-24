@@ -1,6 +1,5 @@
 var SerialPort 	= require('serialport');
 var gpio     	= require('rpi-gpio');
-var nodeRegister;
 
 
 
@@ -50,6 +49,12 @@ module.exports = function(RED) {
 		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
 
 		node.lastC02 = undefined; 
+		node.lastPMSInstant = undefined; 
+		node.lastPMS = undefined;
+
+		node.C02Register = new Set();
+		node.PMSRegister = new Set();
+		node.PMSInstantRegister = new Set();
 
 		var acc = Buffer.from([]);
 
@@ -78,7 +83,6 @@ module.exports = function(RED) {
 
 			return 1000 - i;
 		}
-
 
 		//PMS
 		function muxA (callback)
@@ -149,8 +153,6 @@ module.exports = function(RED) {
 			return undefined; 
 		}
 
-		
-
 		function parseC02 (buffer) 
 		{
 			if(parseInt(C02Checksum(buffer)) != parseInt(buffer.readUInt8(8)) )
@@ -176,8 +178,11 @@ module.exports = function(RED) {
 
 			if(acc.length > 8 && acc.readUInt8( acc.length - 9) == 255 && acc.readUInt8( acc.length - 8) == 134)
 			{
-				node.log("c02 command found!");
-				node.lastC02 = parseC02( acc.slice( acc.length - 9));
+				const C02  = parseC02( acc.slice( acc.length - 9));
+
+				for(const n of node.C02Register)
+					n.output(C02);
+
 				PMSListen();
 			}
 
@@ -189,9 +194,15 @@ module.exports = function(RED) {
 
 			if(acc.length > 31 && acc.readUInt8( acc.length - 32) == 66 && acc.readUInt8( acc.length - 31) == 77)
 			{
-				node.log("PMS command found!");
-				node.lastPMS = parsePMS(acc.slice( acc.length - 32));
-				node.lastPMSInstant = parsePMSInstant(acc.slice( acc.length - 32));
+				const PMS = parsePMS( acc.slice( acc.length - 32));
+				const PMSI = parsePMSInstant( acc.slice( acc.length - 32));
+
+				for(const n of node.PMSRegister)
+					n.output(PMS);
+
+				for(const n of node.PMSInstantRegister)
+					n.output(PMSI);
+
 				C02Listen();
 			}
 
@@ -253,31 +264,13 @@ module.exports = function(RED) {
 		const node = this;
 
 		node.handle = RED.nodes.getNode(config.handle);
-	
+		node.handle.C02Register.add(node);
 
-		function outRecall ()
+		node.output = function (data)
 		{
-			if(node.handle.lastC02 != undefined)
-			node.send( {payload: node.handle.lastC02});
-
-			setTimeout(function()
-				{
-					outRecall();
-
-				}, 2000);
+			if(data)
+			node.send( {payload: data});
 		}
-
-		node.on('input', function(msg) 
-		{
-			if(msg.topic == "zero")
-			{
-				node.handle.zeroC02();
-			}
-		});
-
-
-
-		outRecall();
 	}
 
 	function PMSSensor (config)
@@ -286,22 +279,15 @@ module.exports = function(RED) {
 		const node = this;
 
 		node.handle = RED.nodes.getNode(config.handle); 
+		node.handle.PMSRegister.add(node);
 
-		function outRecall ()
+		node.output = function (data)
 		{
-
-			setTimeout(function()
-				{
-					outRecall();
-
-				}, 2000);
-
-			if(node.handle.lastPMS)
-			node.send([ {payload: node.handle.lastPMS.pm10}, {payload: node.handle.lastPMS.pm25}, {payload: node.handle.lastPMS.pm100}]);
+			if(data)
+				node.send([ {payload: data.pm10}, {payload: data.pm25}, {payload: data.pm100}]);
 		}
-
-		outRecall();
 	}
+
 
 	function PMSInstantSensor (config) 
 	{
@@ -309,23 +295,13 @@ module.exports = function(RED) {
 		const node = this;
 
 		node.handle = RED.nodes.getNode(config.handle); 
+		node.handle.PMSInstantRegister.add(node);
 
-		function outRecall ()
+		node.output = function (data)
 		{
-			if(node.handle.lastPMSInstant)
-			{
-				node.send([ {payload: node.handle.lastPMSInstant.m03}, {payload: node.handle.lastPMSInstant.m05}, {payload: node.handle.lastPMSInstant.m1}]);
-			}
-			setTimeout(function()
-				{
-					outRecall();
-
-				}, 2000);
-
-
+			if(data)
+				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}]);
 		}
-
-		outRecall();
 	}
 
 
