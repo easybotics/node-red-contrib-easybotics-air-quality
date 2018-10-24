@@ -351,6 +351,7 @@ module.exports = function(RED) {
 			{
 				node.status({ fill:"green", shape:"dot", text: "reading"});
 				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}]);
+				return;
 			}
 
 			node.status({ fill:"red", shape:"dot", text: "timeout.."});
