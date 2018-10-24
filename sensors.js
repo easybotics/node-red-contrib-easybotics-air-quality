@@ -53,6 +53,7 @@ module.exports = function(RED) {
 		node.PMSInstantRegister = new Set();
 
 		var acc = Buffer.from([]);
+		var context = 0;
 		var timeCount; 
 
 
@@ -254,6 +255,7 @@ module.exports = function(RED) {
 		 */
 		function PMSListen ()
 		{
+			context++;
 			acc = Buffer.from([]);
 			timeCount = Date.now();
 
@@ -262,10 +264,28 @@ module.exports = function(RED) {
 
 				node.switchA = false;
 			});
+
+			const currentContext = context;
+			setTimeout( function() 
+			{
+				if(context != currentContext) return; 
+
+				for(const n of node.PMSRegister)
+					n.output(undefined);
+
+				for(const n of node.PMSInstantRegister)
+					n.output(undefined);
+
+			
+				node.log("PMS timeout");
+				C02Listen();
+			}, 5000);
+
 		}
 
 		function C02Listen ()
 		{
+			context++;
 			acc = Buffer.from([]);
 			timeCount = Date.now();
 
@@ -276,6 +296,18 @@ module.exports = function(RED) {
 						node.switchA = true;
 					});
 			});
+
+			const currentContext = context;
+			setTimeout( function() 
+			{
+				if(context != currentContext) return; 
+
+				for(const n of node.C02Register)
+					n.output(undefined);
+
+				node.log("c02 timeout");
+				PMSListen();
+			}, 5000);
 		}
 
 
