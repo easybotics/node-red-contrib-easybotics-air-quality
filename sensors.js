@@ -53,6 +53,7 @@ module.exports = function(RED) {
 		node.PMSInstantRegister = new Set();
 
 		var acc = Buffer.from([]);
+		var timeCount; 
 
 
 		if(!port)
@@ -178,6 +179,7 @@ module.exports = function(RED) {
 		 */ 
 		function C02StreamParse (data)
 		{
+			const passed = Date.now() - timeCount 
 			acc = Buffer.concat( [acc, data]);
 
 			if(acc.length > 8 && acc.readUInt8( acc.length - 9) == 255 && acc.readUInt8( acc.length - 8) == 134)
@@ -188,12 +190,24 @@ module.exports = function(RED) {
 					n.output(C02);
 
 				PMSListen();
+
+
+			}
+
+			if(passed > 5000)
+			{
+				for(const n of node.C02Register)
+					n.output(undefined);
+
+				node.log("c02 timeout");
+				PMSListen();
 			}
 
 		}
 
 		function PMSStreamParse (data)
 		{
+			const passed = Date.now() - timeCount 
 			acc = Buffer.concat( [acc, data]);
 
 			if(acc.length > 31 && acc.readUInt8( acc.length - 32) == 66 && acc.readUInt8( acc.length - 31) == 77)
@@ -207,6 +221,19 @@ module.exports = function(RED) {
 				for(const n of node.PMSInstantRegister)
 					n.output(PMSI);
 
+				C02Listen();
+			}
+
+			if(passed > 5000)
+			{
+				for(const n of node.PMSRegister)
+					n.output(undefined);
+
+				for(const n of node.PMSInstantRegister)
+					n.output(undefined);
+
+			
+				node.log("PMS timeout");
 				C02Listen();
 			}
 
@@ -228,6 +255,7 @@ module.exports = function(RED) {
 		function PMSListen ()
 		{
 			acc = Buffer.from([]);
+			timeCount = Date.now();
 
 			muxA( function()
 			{
@@ -239,6 +267,7 @@ module.exports = function(RED) {
 		function C02Listen ()
 		{
 			acc = Buffer.from([]);
+			timeCount = Date.now();
 
 			muxB( function()
 			{
@@ -279,7 +308,10 @@ module.exports = function(RED) {
 			{
 				node.send( {payload: data});
 				node.status({ fill:"green", shape:"dot", text: "C02: " + data});
+				return;
 			}
+
+			node.status({ fill:"red", shape:"dot", text: "timeout.."});
 		}
 	}
 
@@ -294,7 +326,13 @@ module.exports = function(RED) {
 		node.output = function (data)
 		{
 			if(data)
+			{
+				node.status({ fill:"green", shape:"dot", text: "reading"});
 				node.send([ {payload: data.pm10}, {payload: data.pm25}, {payload: data.pm100}]);
+				return;
+			}
+
+			node.status({ fill:"red", shape:"dot", text: "timeout.."});
 		}
 	}
 
@@ -310,7 +348,12 @@ module.exports = function(RED) {
 		node.output = function (data)
 		{
 			if(data)
+			{
+				node.status({ fill:"green", shape:"dot", text: "reading"});
 				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}]);
+			}
+
+			node.status({ fill:"red", shape:"dot", text: "timeout.."});
 		}
 	}
 
