@@ -276,7 +276,10 @@ module.exports = function(RED) {
 		node.output = function (data)
 		{
 			if(data)
-			node.send( {payload: data});
+			{
+				node.send( {payload: data});
+				node.status({ fill:"green", shape:"dot", text: "C02: " + data});
+			}
 		}
 	}
 
