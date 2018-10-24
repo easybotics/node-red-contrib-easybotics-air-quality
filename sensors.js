@@ -48,10 +48,6 @@ module.exports = function(RED) {
 		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
 		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
 
-		node.lastC02 = undefined; 
-		node.lastPMSInstant = undefined; 
-		node.lastPMS = undefined;
-
 		node.C02Register = new Set();
 		node.PMSRegister = new Set();
 		node.PMSInstantRegister = new Set();
@@ -83,8 +79,9 @@ module.exports = function(RED) {
 
 			return 1000 - i;
 		}
-
-		//PMS
+		/*
+		 * switches the Serial multiplexer to 0,0, flushes some buffers, and runs a callback 
+		 */ 
 		function muxA (callback)
 		{
 			gpio.write(35, 0, function()
@@ -102,7 +99,6 @@ module.exports = function(RED) {
 				});
 		};
 
-		//C02
 		function muxB (callback)
 		{
 				gpio.write(35, 1, function()
@@ -121,6 +117,10 @@ module.exports = function(RED) {
 				});
 		};
 
+		/*
+		 * takes a buffer, runs a checksum 
+		 * returns NULL if couldn't parse PMS data, otherwise returns an object 
+		 */ 
 		function parsePMS (buffer)
 		{
 				const calcCheck =  PMSChecksum(buffer); 
@@ -172,6 +172,10 @@ module.exports = function(RED) {
 			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
 		}
 
+		/*
+		 * handles packets of data from the port.on('data' callback 
+		 * accumilates using the global acc, and searches for the head of the C02 return data 
+		 */ 
 		function C02StreamParse (data)
 		{
 			acc = Buffer.concat( [acc, data]);
@@ -208,14 +212,19 @@ module.exports = function(RED) {
 
 		}
 
+		/*
+		 * checks a flag and then parses using the C02 parser or the PMS parser
+		 * set as a callback for port.on('data'
+		 */
 		function parseSwitcher (data)
 		{
 			if(node.switchA) return C02StreamParse(data); 
 			return PMSStreamParse(data);
 		}
 
-
-
+		/*
+		 * toggles the flag that parseSwitcher reads 
+		 */
 		function PMSListen ()
 		{
 			acc = Buffer.from([]);
@@ -224,7 +233,6 @@ module.exports = function(RED) {
 			{
 
 				node.switchA = false;
-				//port.on('data', PMSStreamParse);
 			});
 		}
 
@@ -237,13 +245,12 @@ module.exports = function(RED) {
 				port.write(C02Command, function()
 					{
 						node.switchA = true;
-					//	port.on('data', C02StreamParse);
 					});
 			});
 		}
 
 
-
+		//setup our GPIO pins, and start the chain going 
 		gpio.setup(22, gpio.DIR_OUT, function()
 			{
 
