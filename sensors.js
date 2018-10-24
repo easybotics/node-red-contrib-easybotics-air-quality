@@ -1,5 +1,6 @@
 var SerialPort 	= require('serialport');
 var gpio     	= require('rpi-gpio');
+var nodeRegister;
 
 
 
@@ -48,16 +49,10 @@ module.exports = function(RED) {
 		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
 		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
 
-		var zeroNext = false;
 		node.lastC02 = undefined; 
-		node.lastPMS = undefined;
-		node.lastPMSInstant = undefined; 
 
-		node.zeroC02 = function ()
-		{
+		var acc = Buffer.from([]);
 
-			zeroNext = true;
-		}
 
 		if(!port)
 		{
@@ -84,27 +79,41 @@ module.exports = function(RED) {
 			return 1000 - i;
 		}
 
+
+		//PMS
 		function muxA (callback)
 		{
 			gpio.write(35, 0, function()
 				{
+					port.flush(function() 
+					{
+					ghettoFlush();
+
+					acc = Buffer.from([]);
 					gpio.write(22, 0, function() 
 					{
-						ghettoFlush();
-						port.flush(callback);
+						callback();
+					});
 					});
 				});
 		};
 
+		//C02
 		function muxB (callback)
 		{
 				gpio.write(35, 1, function()
 				{
+					port.flush(function()
+					{
+
+
+					ghettoFlush();
+					acc = Buffer.from([]);
 					gpio.write(22, 0, function()
 						{
-							ghettoFlush();
-							port.flush(callback);
+							callback();
 						});
+					});
 				});
 		};
 
@@ -140,57 +149,7 @@ module.exports = function(RED) {
 			return undefined; 
 		}
 
-		function readPMS () 
-		{
-			//check if we can even get a long enough buffer, if not return NULL
-			const inBuf = port.read(32);
-			if(!inBuf)	return undefined;
-
-			//find the head of the buffer 
-			var last = 66;
-			var count = -1;
-			for(const b of inBuf)
-			{
-				if(last == 66 && b == 77) break;
-				count++;
-				last = b;
-			}
-
-			//maybe we happen to have the head at 0
-			if(count == 0) 
-			{ 
-				const out = 
-				{
-					pms: parsePMS(inBuf), 
-					instant: parsePMSInstant(inBuf),
-				}
-
-				return out;
-
-			};
-
-			//otherwise try and read the remaining, and concat the remaining of the buffer
-			const secondary = port.read(32 - count);
-			try 
-			{
-				const fRead = Buffer.concat( [inBuf.slice(count, 32), secondary.slice(0, count)]);
-
-				const out = 
-				{
-					pms: parsePMS(fRead), 
-					instant: parsePMSInstant(fRead),
-				}
-
-				return out;
-
-			}
-			catch (e) 
-			{
-				node.log("caught from concatting an extra PMS buffer: though");
-				node.log(e);
-				return undefined;
-			};
-		}
+		
 
 		function parseC02 (buffer) 
 		{
@@ -211,65 +170,68 @@ module.exports = function(RED) {
 			return parseInt( buffer.readUInt8(2) * 256 + buffer.readUInt8(3));
 		}
 
-		function readC02 ()
+		function C02StreamParse (data)
 		{
-			var inBuf = port.read(9);
-			if(!inBuf) return undefined;
+			acc = Buffer.concat( [acc, data]);
 
-			return parseC02(inBuf);
+			if(acc.length > 8 && acc.readUInt8( acc.length - 9) == 255 && acc.readUInt8( acc.length - 8) == 134)
+			{
+				node.log("c02 command found!");
+				node.lastC02 = parseC02( acc.slice( acc.length - 9));
+				PMSListen();
+			}
+
 		}
 
-		function callBack( up = true, count = 0, delay = 2000) 
+		function PMSStreamParse (data)
 		{
-			if(up)
+			acc = Buffer.concat( [acc, data]);
+
+			if(acc.length > 31 && acc.readUInt8( acc.length - 32) == 66 && acc.readUInt8( acc.length - 31) == 77)
 			{
-				muxA(function()
-				{
-					setTimeout(function()
-					{
-						const out = readPMS();
-						if(out)
-						{
-							node.lastPMS = out.pms;
-							node.lastPMSInstant = out.instant;
-						}
-						else 
-						{
-							node.lastPMS = undefined;
-							node.lastPMSInstant = undefined;
-						}
-
-
-						callBack(!up, count + 1, delay);
-
-					}, delay);
-				});
+				node.log("PMS command found!");
+				node.lastPMS = parsePMS(acc.slice( acc.length - 32));
+				node.lastPMSInstant = parsePMSInstant(acc.slice( acc.length - 32));
+				C02Listen();
 			}
-			else
+
+		}
+
+		function parseSwitcher (data)
+		{
+			if(node.switchA) return C02StreamParse(data); 
+			return PMSStreamParse(data);
+		}
+
+
+
+		function PMSListen ()
+		{
+			acc = Buffer.from([]);
+
+			muxA( function()
 			{
-				muxB(function()
+
+				node.switchA = false;
+				//port.on('data', PMSStreamParse);
+			});
+		}
+
+		function C02Listen ()
+		{
+			acc = Buffer.from([]);
+
+			muxB( function()
+			{
+				port.write(C02Command, function()
 					{
-						if(zeroNext) 
-						{
-							node.log("zeroing c02 sensor now..");
-							port.write(C02CommandZero);
-							zeroNext = false; 
-						}
-
-						port.write(C02Command);
-						setTimeout(function()
-						{
-							port.drain(
-							function() {
-								node.lastC02 = readC02();
-							});
-
-							callBack(!up, count + 1, delay);
-						}, delay); 
-
+						node.switchA = true;
+					//	port.on('data', C02StreamParse);
 					});
-			}
+			});
 		}
+
+
 
 		gpio.setup(22, gpio.DIR_OUT, function()
 			{
@@ -277,7 +239,8 @@ module.exports = function(RED) {
 			gpio.setup(35, gpio.DIR_OUT, function() 
 				{
 
-				 callBack();
+					PMSListen();
+					port.on('data', parseSwitcher);
 
 				});
 			}); 
