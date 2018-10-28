@@ -148,7 +148,10 @@ module.exports = function(RED) {
 			{
 				return { m03: buffer.readUInt8(16) * 256 + buffer.readUInt8(17), 
 						 m05: buffer.readUInt8(18) * 256 + buffer.readUInt8(19), 
-						 m1: buffer.readUInt8(20) * 256 + buffer.readUInt8(21),}
+						 m1: buffer.readUInt8(20) * 256 + buffer.readUInt8(21),
+						 m25: buffer.readUInt8(22) * 256 + buffer.readUInt8(23),
+						 m5: buffer.readUInt8(24) * 256 + buffer.readUInt8(25), 
+						 m10: buffer.readUInt8(26) * 256 + buffer.readUInt8(27), }
 			}
 			 node.log("dumped PMS due to checksum!");
 
@@ -382,7 +385,7 @@ module.exports = function(RED) {
 			if(data)
 			{
 				node.status({ fill:"green", shape:"dot", text: "reading"});
-				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}]);
+				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}, {payload: data.m25}, {payload: data.m5}, {payload: data.m10}]);
 				return;
 			}
 
