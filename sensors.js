@@ -392,7 +392,7 @@ module.exports = function(RED) {
 
 
 	RED.nodes.registerType("mux-handle", Handle);
-	RED.nodes.registerType("mux-c02-read", C02Sensor);
-	RED.nodes.registerType("mux-PMS-read", PMSSensor);
-	RED.nodes.registerType("mux-PMSInstant-read", PMSInstantSensor);
+	RED.nodes.registerType("MHZ19-C02-Sensor", C02Sensor);
+	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
+	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
 }

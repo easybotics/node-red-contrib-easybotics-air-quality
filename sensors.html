@@ -20,7 +20,7 @@
 
 
 <script type="text/javascript">
-	RED.nodes.registerType('mux-c02-read', 
+	RED.nodes.registerType('MHZ19-C02-Sensor', 
 	{
 		category: 'sensors', 
 		color: '#D7A1D1', 
@@ -39,7 +39,7 @@
 	});
 </script>
 
-<script type="text/x-red" data-template-name="mux-c02-read">
+<script type="text/x-red" data-template-name="MHZ19-C02-Sensor">
 	<div class = "form-row">
 		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
 	</div>
@@ -49,8 +49,14 @@
 	</div>
 </script>
 
+<script type="text/x-red" data-help-name="MHZ19-C02-Sensor">
+	<p>
+		Outputs the current C02 concentration in PPM 
+	</p>
+
+
 <script type="text/javascript">
-	RED.nodes.registerType('mux-PMS-read', 
+	RED.nodes.registerType('PMS5003-PM-Reading', 
 	{
 		category: 'sensors', 
 		color: '#C1FF40', 
@@ -69,7 +75,8 @@
 	});
 </script>
 
-<script type="text/x-red" data-template-name="mux-PMS-read">
+
+<script type="text/x-red" data-template-name="PMS5003-PM-Reading">
 	<div class = "form-row">
 		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
 	</div>
@@ -79,7 +86,7 @@
 	</div>
 </script>
 
-<script type="text/x-red" data-help-name="mux-PMS-read">
+<script type="text/x-red" data-help-name="PMS5003-PM-Reading">
 	<p>
 		Three outputs: <br> 
 		<b> PM 1.0: </b> <br>
@@ -89,7 +96,7 @@
 </script>
 
 <script type="text/javascript">
-	RED.nodes.registerType('mux-PMSInstant-read', 
+	RED.nodes.registerType('PMS5003-Particle-Concentration', 
 	{
 		category: 'LED Matrix', 
 		color: '#C1FF40', 
@@ -108,7 +115,7 @@
 	});
 </script>
 
-<script type="text/x-red" data-template-name="mux-PMSInstant-read">
+<script type="text/x-red" data-template-name="PMS5003-Particle-Concentration">
 	<div class = "form-row">
 		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
 	</div>
@@ -118,7 +125,7 @@
 	</div>
 </script>
 
-<script type="text/x-red" data-help-name="mux-PMSInstant-read">
+<script type="text/x-red" data-help-name="PMS5003-Particle-Concentration">
 	<p>
 		Three outputs: <br> 
 		<b> PM 1.0: </b> <br>
