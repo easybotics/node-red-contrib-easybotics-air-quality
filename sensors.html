@@ -52,6 +52,7 @@
 <script type="text/x-red" data-help-name="MHZ19-C02-Sensor">
 	<p>
 		Outputs the current C02 concentration in PPM 
+		Automatic calibration, sets the lowest concentration in 24 hours to 400PPM, you can enable or disable this in the MUX-HANDLE config node, it is disabled by default
 	</p>
 </script>
 
@@ -71,7 +72,7 @@
 		icon: "arrow-in.png", 
 		label: function()
 		{
-			return this.name || "PM concentration 1, 2.5, 10";
+			return this.name || "PM concentration";
 		},
 	});
 </script>
@@ -111,7 +112,7 @@
 		icon: "arrow-in.png", 
 		label: function()
 		{
-			return this.name || "Particulate per ML of air 0.3um, 0.5um, 1.0um";
+			return this.name || "Particulate per ML of air";
 		},
 	});
 </script>
@@ -128,10 +129,14 @@
 
 <script type="text/x-red" data-help-name="PMS5003-Particle-Concentration">
 	<p>
-		Three outputs: <br> 
-		<b> PM 1.0: </b> <br>
-		<b> PM 2.5: </b> <br>
-		<b> PM 10: </b> <br>
+		Six outputs: <br> 
+		<b> Count of particles above 0.3um diamter in 0.1L of air <br>
+		<b> Count of particles above 0.5um diamter in 0.1L of air <br>
+		<b> Count of particles above 1.0um diamter in 0.1L of air <br>
+		<b> Count of particles above 2.5um diamter in 0.1L of air <br>
+		<b> Count of particles above 5.0um diamter in 0.1L of air <br>
+		<b> Count of particles above 10um diamter in 0.1L of air <br>
+
 	</p> 
 </script>
 
