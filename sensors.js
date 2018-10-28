@@ -345,9 +345,12 @@ module.exports = function(RED) {
 		node.handle = RED.nodes.getNode(config.handle);
 		node.handle.C02Register.add(node);
 
-		node.on('input', function () 
+		node.on('input', function (msg) 
 			{
-				node.handle.nextZero = true; 
+				if(msg.payload == "zero")
+				{
+					node.handle.nextZero = true; 
+				}
 			});
 
 		node.output = function (data)
