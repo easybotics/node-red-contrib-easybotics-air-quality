@@ -45,24 +45,30 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config);
 		const node = this;
-		const C02Command = Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
-		const C02CommandZero = Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
+		const C02Command =       Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
+		const C02CommandZero =   Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
+		const C02CommandABCOFF = Buffer.from([255, 1, 136, 0, 0, 0, 0, 0, 119]);
+		const C02CommandABCON =	 Buffer.from([255, 1, 136, 160, 0, 0, 0, 0, 119]);
 
-		node.C02Register = new Set();
-		node.PMSRegister = new Set();
+		
+		node.autoConfigC02	= (config.autoConfigC02 || "man"); 
+		node.C02Register	= new Set();
+		node.PMSRegister	= new Set();
 		node.PMSInstantRegister = new Set();
+		node.nextZero		= false;
 
 		var acc = Buffer.from([]);
 		var context = 0;
 		var timeCount; 
 
-		node.nextZero = false;
-
-
 		if(!port)
 		{
 			port = new SerialPort('/dev/serial0', { baudRate: 9600});
 		}
+
+		node.log( C02Checksum( C02CommandABCON));
+
+
 
 		function ghettoFlush ()
 		{
@@ -109,8 +115,6 @@ module.exports = function(RED) {
 				{
 					port.flush(function()
 					{
-
-
 					ghettoFlush();
 					acc = Buffer.from([]);
 					gpio.write(22, 0, function()
@@ -298,8 +302,8 @@ module.exports = function(RED) {
 			{
 				if(node.nextZero) 
 				{
-					port.write(C02CommandZero); 
 					node.nextZero = false; 
+					port.write(C02CommandZero); 
 				}
 				
 				port.write(C02Command, function()
@@ -328,6 +332,24 @@ module.exports = function(RED) {
 
 			gpio.setup(35, gpio.DIR_OUT, function() 
 				{
+
+					if(node.autoConfigC02 == "man") 
+					{ 
+						node.log("deactivating automatic C02 calibration");
+						muxB( function()
+							{
+								port.write( C02CommandABCOFF);
+							});
+					};
+
+					if(node.autoConfigC02 == "auto") 
+					{ 
+						node.log("activating automatic C02 calibration");
+						muxB( function()
+							{
+								port.write( C02CommandABCON);
+							});
+					};
 
 					PMSListen();
 					port.on('data', parseSwitcher);

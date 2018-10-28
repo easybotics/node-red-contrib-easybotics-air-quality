@@ -5,10 +5,34 @@
 			defaults: 
 			{
 				name: {value:""}, 
+				autoConfigC02: {value: "auto", required: true},
 			}, 
+
+			oneditprepare: function ()
+			{
+			},
+
 			icon: "arrow-in.png", 
 			label: "MUX HANDLE",
 		});
+</script>
+
+<script type="text/x-red" data-template-name="mux-handle">
+	<p>
+		<b> auto calibration:</b> <br>
+		auto calibration on the MHZ19 C02 sensor pins the lowest value read in 24 hours to 400ppm <br> 
+		probably should be kept off if your sensor is located indoors
+	</p>
+
+	<div class="form-row">
+		<label for="node-config-input-autoConfigC02"> <i class= "icon-bookmark"></i>Automatic C02 calibration</label>
+		<select id = "node-config-input-autoConfigC02">
+			<option value="auto"> auto </option>
+			<option value="man"> manual <option>
+		</select>
+
+	</div>
+
 </script>
 
 <script type="text/x-red" data-help-name="mux-handle">
