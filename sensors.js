@@ -56,6 +56,8 @@ module.exports = function(RED) {
 		var context = 0;
 		var timeCount; 
 
+		node.nextZero = false;
+
 
 		if(!port)
 		{
@@ -294,6 +296,12 @@ module.exports = function(RED) {
 
 			muxB( function()
 			{
+				if(node.nextZero) 
+				{
+					port.write(C02CommandZero); 
+					node.nextZero = false; 
+				}
+				
 				port.write(C02Command, function()
 					{
 						node.switchA = true;
@@ -336,6 +344,11 @@ module.exports = function(RED) {
 
 		node.handle = RED.nodes.getNode(config.handle);
 		node.handle.C02Register.add(node);
+
+		node.on('input', function () 
+			{
+				node.handle.nextZero = true; 
+			});
 
 		node.output = function (data)
 		{
