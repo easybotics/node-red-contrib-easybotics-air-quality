@@ -402,27 +402,8 @@ module.exports = function(RED) {
 	}
 
 
-	function PMS5003Decode (config)
-	{
-		RED.nodes.createNode(this, config);
-		const node = this; 
-
-		node.on('input', function (msg)
-		{
-
-			const pm10  =	{payload: msg.payload[10] * 256 + msg.payload[11]}; 
-			const pm25  =	{payload: msg.payload[12] * 256 + msg.payload[13]};
-			const pm100 =	{payload: msg.payload[14] * 255 + msg.payload[15]};
-
-
-			node.send([pm10, pm25, pm100]);
-		});
-	};
-
-
 	RED.nodes.registerType("mux-handle", Handle);
 	RED.nodes.registerType("MHZ19-C02-Sensor", C02Sensor);
 	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
 	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
-	RED.nodes.registerType("PMS5003-decode", PMS5003Decode);
 }
