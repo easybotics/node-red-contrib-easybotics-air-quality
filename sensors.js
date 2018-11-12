@@ -7,39 +7,7 @@ var gpio     	= require('rpi-gpio');
 
 module.exports = function(RED) {
 
-	var port; 
 
-	function PMSChecksum (buffer) 
-	{
-		var output = 0; 
-
-		for(var i = 0; i < 30; i++)
-		{
-			output += buffer.readUInt8(i);
-			output = output & 65535;
-		}
-
-		return output; 
-	}
-
-	function C02Checksum (buffer) 
-	{
-		const overFlow = function (i)
-		{
-			if(i >= 0 && i <= 256) return i;
-			if(i > 256) return overFlow( i - 256);
-			if(i < 0)   return overFlow(256 - (-1 * i));
-		}
-
-		var output = 0; 
-
-		for(var i = 0; i < 8; i++)
-			output = overFlow(output + buffer.readUInt8(i));
-
-		output = overFlow( 255 - output);
-
-		return output; 
-	}
 
 	function Handle (config) 
 	{
@@ -50,53 +18,50 @@ module.exports = function(RED) {
 		const C02CommandABCOFF = Buffer.from([255, 1, 136, 0, 0, 0, 0, 0, 119]);
 		const C02CommandABCON =	 Buffer.from([255, 1, 136, 160, 0, 0, 0, 0, 119]);
 
+		node.port = new SerialPort('/dev/serial0', {baudRate: 9600});
 		
 		node.autoConfigC02	= (config.autoConfigC02 || "man"); 
 		node.C02Register	= new Set();
 		node.PMSRegister	= new Set();
 		node.PMSInstantRegister = new Set();
 		node.nextZero		= false;
+		node.ending			= false;
+
+		node.parser; 
+
 
 		var acc = Buffer.from([]);
 		var context = 0;
-		var timeCount; 
 
-		if(!port)
-		{
-			port = new SerialPort('/dev/serial0', { baudRate: 9600});
-		}
-
-		node.log( C02Checksum( C02CommandABCON));
-
-
+		node.on('close', function() 
+			{
+				node.log("CLOSING ");
+				node.port.close();
+				node.ending = true;
+			});
 
 		function ghettoFlush ()
 		{
-			if (! (port.read())) 
+			if (! (node.port.read())) 
 			{
 				return;
 			}
 
-			if (! (port.read(1))) 
+			if (! (node.port.read(1))) 
 			{
 				return;
 			}
-
-			var i = 2048;
-			var inBuf = port.read(i);
-			while (!inBuf)
-				inBuf = port.read(i--);
-
-			return 1000 - i;
 		}
+
 		/*
 		 * switches the Serial multiplexer to 0,0, flushes some buffers, and runs a callback 
 		 */ 
 		function muxA (callback)
 		{
+
 			gpio.write(35, 0, function()
 				{
-					port.flush(function() 
+					node.port.flush(function() 
 					{
 					ghettoFlush();
 
@@ -113,7 +78,7 @@ module.exports = function(RED) {
 		{
 				gpio.write(35, 1, function()
 				{
-					port.flush(function()
+					node.port.flush(function()
 					{
 					ghettoFlush();
 					acc = Buffer.from([]);
@@ -124,6 +89,38 @@ module.exports = function(RED) {
 					});
 				});
 		};
+
+		function PMSChecksum (buffer) 
+		{
+			var output = 0; 
+
+			for(var i = 0; i < 30; i++)
+			{
+				output += buffer.readUInt8(i);
+				output = output & 65535;
+			}
+
+			return output; 
+		}
+
+		function C02Checksum (buffer) 
+		{
+			const overFlow = function (i)
+			{
+				if(i >= 0 && i <= 256) return i;
+				if(i > 256) return overFlow( i - 256);
+				if(i < 0)   return overFlow(256 - (-1 * i));
+			}
+
+			var output = 0; 
+
+			for(var i = 0; i < 8; i++)
+				output = overFlow(output + buffer.readUInt8(i));
+
+			output = overFlow( 255 - output);
+
+			return output; 
+		}
 
 		/*
 		 * takes a buffer, runs a checksum 
@@ -189,7 +186,6 @@ module.exports = function(RED) {
 		 */ 
 		function C02StreamParse (data)
 		{
-			const passed = Date.now() - timeCount 
 			acc = Buffer.concat( [acc, data]);
 
 			if(acc.length > 8 && acc.readUInt8( acc.length - 9) == 255 && acc.readUInt8( acc.length - 8) == 134)
@@ -203,21 +199,10 @@ module.exports = function(RED) {
 
 
 			}
-
-			if(passed > 5000)
-			{
-				for(const n of node.C02Register)
-					n.output(undefined);
-
-				node.log("c02 timeout");
-				PMSListen();
-			}
-
 		}
 
 		function PMSStreamParse (data)
 		{
-			const passed = Date.now() - timeCount 
 			acc = Buffer.concat( [acc, data]);
 
 			if(acc.length > 31 && acc.readUInt8( acc.length - 32) == 66 && acc.readUInt8( acc.length - 31) == 77)
@@ -233,20 +218,6 @@ module.exports = function(RED) {
 
 				C02Listen();
 			}
-
-			if(passed > 5000)
-			{
-				for(const n of node.PMSRegister)
-					n.output(undefined);
-
-				for(const n of node.PMSInstantRegister)
-					n.output(undefined);
-
-			
-				node.log("PMS timeout");
-				C02Listen();
-			}
-
 		}
 
 		/*
@@ -255,6 +226,9 @@ module.exports = function(RED) {
 		 */
 		function parseSwitcher (data)
 		{
+
+			if(node.ending) return; 
+
 			if(node.switchA) return C02StreamParse(data); 
 			return PMSStreamParse(data);
 		}
@@ -264,13 +238,12 @@ module.exports = function(RED) {
 		 */
 		function PMSListen ()
 		{
+			if(node.ending) return;
 			context++;
 			acc = Buffer.from([]);
-			timeCount = Date.now();
 
 			muxA( function()
 			{
-
 				node.switchA = false;
 			});
 
@@ -289,24 +262,23 @@ module.exports = function(RED) {
 				node.log("PMS timeout");
 				C02Listen();
 			}, 5000);
-
 		}
 
 		function C02Listen ()
 		{
+			if(node.ending) return;
 			context++;
 			acc = Buffer.from([]);
-			timeCount = Date.now();
 
 			muxB( function()
 			{
 				if(node.nextZero) 
 				{
 					node.nextZero = false; 
-					port.write(C02CommandZero); 
+					node.port.write(C02CommandZero); 
 				}
 				
-				port.write(C02Command, function()
+				node.port.write(C02Command, function()
 					{
 						node.switchA = true;
 					});
@@ -325,7 +297,6 @@ module.exports = function(RED) {
 			}, 5000);
 		}
 
-
 		//setup our GPIO pins, and start the chain going 
 		gpio.setup(22, gpio.DIR_OUT, function()
 			{
@@ -338,7 +309,7 @@ module.exports = function(RED) {
 						node.log("deactivating automatic C02 calibration");
 						muxB( function()
 							{
-								port.write( C02CommandABCOFF);
+								node.port.write( C02CommandABCOFF);
 							});
 					};
 
@@ -347,13 +318,12 @@ module.exports = function(RED) {
 						node.log("activating automatic C02 calibration");
 						muxB( function()
 							{
-								port.write( C02CommandABCON);
+								node.port.write( C02CommandABCON);
 							});
 					};
 
 					PMSListen();
-					port.on('data', parseSwitcher);
-
+					node.port.on('data', parseSwitcher);
 				});
 			}); 
 	};
