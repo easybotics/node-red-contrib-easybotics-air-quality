@@ -159,3 +159,40 @@
 		<b> Count of particles above 10um diamter in 0.1L of air <br>
 	</p> 
 </script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('BME280-Parse', 
+	{
+		category: 'Air Quality', 
+		color: '#C1FF40',
+		defaults:
+		{
+			name: {value:""},
+		},
+		inputs: 1, 
+		outputs: 3, 
+		icon: "arrow-in.png",
+		label: function()
+		{
+			return this.name || "BME280 Parser";
+		},
+	});
+</script>
+
+<script type="text/x-red" date-template-name="BME280-Parse">
+	<div class = "form-row">
+		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="BME280-Parse">
+	<p>
+	Takes the output from the shipped BME-280 node as input <br> <br>
+	
+
+	Three outputs: <br>
+	<b> Temperature in Celsius <br>
+	<b> Percentage Humidity <br>
+	<b> Pressure in hPa <br>
+	</p>
+</script>
