@@ -401,9 +401,23 @@ module.exports = function(RED) {
 		}
 	}
 
+	function BME280Parse (config)
+	{	
+		RED.nodes.createNode(this, config);
+		const node = this; 
+		
+		node.on('input',  function(msg)
+		{
+			node.send([ {payload: msg.payload.temperature_C},
+						{payload: msg.payload.humidity},
+						{payload: msg.payload.pressure_hPa} ]);
+		});
+	}
+
 
 	RED.nodes.registerType("mux-handle", Handle);
 	RED.nodes.registerType("MHZ19-C02-Sensor", C02Sensor);
 	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
 	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
+	RED.nodes.registerType("BME280-Parse", BME280Parse);
 }
