@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-easybotics-air-quality",
-  "version": "0.3.6",
+  "version": "0.4.6",
   "description": "use a serial mux to read multiple atmospheric sensors on the raspi, in a user friendly way",
   "keywords": [
     "raspberry",
