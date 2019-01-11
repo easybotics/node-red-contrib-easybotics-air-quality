@@ -15,8 +15,8 @@
     "node-red"
   ],
   "dependencies": {
-    "rpi-gpio": "1.0.0",
-    "serialport": "7.0.2"
+    "rpi-gpio": "^2.1.2",
+    "serialport": "^6.2.2"
   },
   "homepage": "https://github.com/keptan/node-red-contrib-easybotics-air-quality",
   "bugs": "https://github.com/keptan",
