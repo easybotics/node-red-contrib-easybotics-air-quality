@@ -18,6 +18,15 @@ module.exports = function(RED) {
 		const C02CommandABCOFF = Buffer.from([255, 1, 136, 0, 0, 0, 0, 0, 119]);
 		const C02CommandABCON =	 Buffer.from([255, 1, 136, 160, 0, 0, 0, 0, 119]);
 
+		const PMSCommandRead  =  Buffer.from([66, 77, 226, 0, 0, 1, 113]);
+
+		const PMSCommandPassive = Buffer.from([66, 77, 225, 0, 0, 1, 112]);
+		const PMSCommandActive = Buffer.from([66, 77, 225, 0, 1, 1, 113]);
+
+		const PMSCommandWake = Buffer.from([66, 77, 228, 0, 1, 1, 116]);
+
+		const PMSCommandSleep = Buffer.from([66, 77, 228, 0, 0, 1, 115]);
+
 		node.port = new SerialPort('/dev/serial0', {baudRate: 9600});
 		
 		node.autoConfigC02	= (config.autoConfigC02 || "man"); 
@@ -130,6 +139,15 @@ module.exports = function(RED) {
 		{
 				const calcCheck =  PMSChecksum(buffer); 
 				const readCheck = (buffer.readUInt8(30) * 256  + buffer.readUInt8(31));
+
+				str = ''
+				for(i = 0; i < 31; i++)
+				{
+					str += ',';
+					str += buffer.readUInt8(i);
+				}
+
+				node.log(str);
 
 				if(calcCheck == readCheck);
 				{
@@ -244,7 +262,10 @@ module.exports = function(RED) {
 
 			muxA( function()
 			{
-				node.switchA = false;
+					node.port.write(PMSCommandRead);
+					node.log("polled PMS ");
+					node.switchA = false;
+
 			});
 
 			const currentContext = context;
@@ -321,6 +342,15 @@ module.exports = function(RED) {
 								node.port.write( C02CommandABCON);
 							});
 					};
+
+					muxA( function() 
+					{ 
+					
+						node.log("switching PMS to passive mode..");
+						node.port.write(PMSCommandPassive)
+						node.port.flush();
+					
+					});
 
 					PMSListen();
 					node.port.on('data', parseSwitcher);
