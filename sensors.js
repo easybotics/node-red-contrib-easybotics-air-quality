@@ -1,5 +1,6 @@
 var SerialPort 	= require('serialport');
 var gpio     	= require('rpi-gpio');
+var serialPoll = require('./serialPoll.js');
 
 
 
@@ -35,6 +36,9 @@ module.exports = function(RED) {
 		node.PMSInstantRegister = new Set();
 		node.nextZero		= false;
 		node.ending			= false;
+		node.hardwareSerial = serialPoll.hardwareSerial();
+
+		node.log(node.hardwareSerial);
 
 		node.parser; 
 
@@ -147,8 +151,6 @@ module.exports = function(RED) {
 					str += buffer.readUInt8(i);
 				}
 
-				node.log(str);
-
 				if(calcCheck == readCheck);
 				{
 					return { pm10: buffer.readUInt8(10) * 256 + buffer.readUInt8(11), 
@@ -213,7 +215,7 @@ module.exports = function(RED) {
 				for(const n of node.C02Register)
 					n.output(C02);
 
-				PMSListen();
+				setTimeout(PMSListen, 1000);
 
 
 			}
@@ -263,7 +265,6 @@ module.exports = function(RED) {
 			muxA( function()
 			{
 					node.port.write(PMSCommandRead);
-					node.log("polled PMS ");
 					node.switchA = false;
 
 			});
@@ -379,7 +380,12 @@ module.exports = function(RED) {
 		{
 			if(data)
 			{
-				node.send( {payload: data});
+				var msg = {}; 
+				msg.payload = data;
+				msg.topic = "C02 ppm";
+				msg.measurement = node.handle.hardwareSerial + '/' + "C02";
+
+				node.send(msg);
 				node.status({ fill:"green", shape:"dot", text: "C02: " + data});
 				return;
 			}
@@ -400,8 +406,24 @@ module.exports = function(RED) {
 		{
 			if(data)
 			{
+				const serial = node.handle.hardwareSerial;
+				const topics = ["PM1.0", "PM2.5", "PM10"];
+
+				const msg0 = {payload: data.pm10, topic: topics[0], 
+							  measurement: serial + '/' + topics[0]};
+
+
+				const msg1 = {payload: data.pm25, topic: topics[1], 
+							  measurement: serial + '/' + topics[1]};
+
+
+				const msg2 = {payload: data.pm100, topic: topics[2], 
+							  measurement: serial + '/' + topics[2]};
+
 				node.status({ fill:"green", shape:"dot", text: "reading"});
-				node.send([ {payload: data.pm10}, {payload: data.pm25}, {payload: data.pm100}]);
+				node.send([ msg0, msg1, msg2]);
+
+
 				return;
 			}
 
@@ -422,8 +444,30 @@ module.exports = function(RED) {
 		{
 			if(data)
 			{
+				const serial = node.handle.hardwareSerial;
+				const topics = ["Particles>0.3um", "Particles>0.5um", "Particles>1.0um", 
+								"Particles>2.5um", "Particles>5um", "Particles>10um"];
+
+				const msg0 = {payload: data.m03, topic: topics[0], 
+							  measurement: serial + '/' + topics[0]};
+
+				const msg1 = {payload: data.m05, topic: topics[1], 
+							  measurement: serial + '/' + topics[1]};
+
+				const msg2 = {payload: data.m1, topic: topics[2], 
+							  measurement: serial + '/' + topics[2]};
+
+				const msg3 = {payload: data.m25, topic: topics[3], 
+							  measurement: serial + '/' + topics[3]};
+
+				const msg4 = {payload: data.m5, topic: topics[4], 
+							  measurement: serial + '/' + topics[4]};
+
+				const msg5 = {payload: data.m10, topic: topics[5], 
+							  measurement: serial + '/' + topics[5]};
+
 				node.status({ fill:"green", shape:"dot", text: "reading"});
-				node.send([ {payload: data.m03}, {payload: data.m05}, {payload: data.m1}, {payload: data.m25}, {payload: data.m5}, {payload: data.m10}]);
+				node.send([ msg0, msg1. msg2, msg3, msg4, msg5]);
 				return;
 			}
 
@@ -435,12 +479,25 @@ module.exports = function(RED) {
 	{	
 		RED.nodes.createNode(this, config);
 		const node = this; 
+		const serial = serialPoll.hardwareSerial();
 		
 		node.on('input',  function(msg)
 		{
-			node.send([ {payload: msg.payload.temperature_C},
-						{payload: msg.payload.humidity},
-						{payload: msg.payload.pressure_hPa} ]);
+			const topics = ["temperature", "humidity", "pressure"];
+
+			const msg0 = {payload: msg.payload.temperature_C, 
+						  topic: topics[0], 
+						  measurement: serial + '/' + topics[0]};
+
+			const msg1 = {payload: msg.payload.humidity, 
+						  topic: topics[1], 
+						  measurement: serial + '/' + topics[1]};
+
+			const msg2 = {payload: msg.payload.pressure_hPa, 
+						  topic: topics[2], 
+						  measurement: serial + '/' + topics[2]};
+
+			node.send([msg0, msg1, msg2]);
 		});
 	}
 
