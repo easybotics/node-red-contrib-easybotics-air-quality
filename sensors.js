@@ -467,7 +467,7 @@ module.exports = function(RED) {
 							  measurement: serial + '/' + topics[5]};
 
 				node.status({ fill:"green", shape:"dot", text: "reading"});
-				node.send([ msg0, msg1. msg2, msg3, msg4, msg5]);
+				node.send([ msg0, msg1, msg2, msg3, msg4, msg5]);
 				return;
 			}
 
