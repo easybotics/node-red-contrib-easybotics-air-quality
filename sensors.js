@@ -501,10 +501,38 @@ module.exports = function(RED) {
 		});
 	}
 
+	function dataFormat (config)
+	{
+		RED.nodes.createNode(this, config);
+		const node = this; 
+
+		node.log(config.name);
+		node.handle = RED.nodes.getNode(config.handle);
+
+		node.on('input', function(msg)
+		{
+			var out = {}; 
+
+			out.measurement = msg.topic; 
+			out.topic = msg.topic; 
+
+			const fields = {value: msg.payload};
+			const tags = {serial: node.handle.hardwareSerial, 
+						  geohash: "8e9"};
+			
+			out.payload = [fields, tags];
+			out.url =  "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial;
+
+			node.send(out);
+			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial});
+		});
+	}
+
 
 	RED.nodes.registerType("mux-handle", Handle);
 	RED.nodes.registerType("MHZ19-C02-Sensor", C02Sensor);
 	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
 	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
 	RED.nodes.registerType("BME280-Parse", BME280Parse);
+	RED.nodes.registerType("database-format", dataFormat);
 }

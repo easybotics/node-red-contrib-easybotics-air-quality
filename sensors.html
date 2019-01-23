@@ -197,3 +197,43 @@
 	<b> Pressure in hPa <br>
 	</p>
 </script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('database-format', 
+	{
+		category: 'Air Quality', 
+		color: '#C1FF40', 
+		defaults:
+		{
+			name: {value:""}, 
+			handle: {type: 'mux-handle', required:true},
+		},
+		inputs: 1, 
+		outputs: 1, 
+		icon: "arrow-in.png", 
+		label: function()
+		{
+			return this.name || "Database Format";
+		},
+	});
+</script>
+
+<script type="text/x-red" data-template-name="database-format">
+	<div class = "form-row">
+		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
+		<input type='text' id='node-input-name'/>
+	</div>
+	<div class='form-row'>
+		<label for="node-config-input-handle"><i class='fa fa-tag'></i> Handle</label>
+		<input type='text' id='node-input-handle'/>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="database-format">
+	<p>
+	Takes input from any air-quality sensor nodes (BME-parse, PM, C02), and formats it for use in the easybotics grafana database 
+
+	the 'serial' property of the output shows the url to find your logged data
+
+	</p>
+</script>
