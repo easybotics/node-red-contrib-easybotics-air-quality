@@ -381,9 +381,8 @@ module.exports = function(RED) {
 			if(data)
 			{
 				var msg = {}; 
-				msg.payload = data;
-				msg.topic = "C02 ppm";
-				msg.measurement = node.handle.hardwareSerial + '/' + "C02";
+				msg.payload = parseInt(data);
+				msg.topic = "C02";
 
 				node.send(msg);
 				node.status({ fill:"green", shape:"dot", text: "C02: " + data});
@@ -409,20 +408,12 @@ module.exports = function(RED) {
 				const serial = node.handle.hardwareSerial;
 				const topics = ["PM1.0", "PM2.5", "PM10"];
 
-				const msg0 = {payload: data.pm10, topic: topics[0], 
-							  measurement: serial + '/' + topics[0]};
-
-
-				const msg1 = {payload: data.pm25, topic: topics[1], 
-							  measurement: serial + '/' + topics[1]};
-
-
-				const msg2 = {payload: data.pm100, topic: topics[2], 
-							  measurement: serial + '/' + topics[2]};
+				const msg0 = {payload: data.pm10, topic: topics[0]};
+				const msg1 = {payload: data.pm25, topic: topics[1]};
+				const msg2 = {payload: data.pm100, topic: topics[2]};
 
 				node.status({ fill:"green", shape:"dot", text: "reading"});
 				node.send([ msg0, msg1, msg2]);
-
 
 				return;
 			}
@@ -448,23 +439,17 @@ module.exports = function(RED) {
 				const topics = ["Particles>0.3um", "Particles>0.5um", "Particles>1.0um", 
 								"Particles>2.5um", "Particles>5um", "Particles>10um"];
 
-				const msg0 = {payload: data.m03, topic: topics[0], 
-							  measurement: serial + '/' + topics[0]};
+				const msg0 = {payload: data.m03, topic: topics[0]};
 
-				const msg1 = {payload: data.m05, topic: topics[1], 
-							  measurement: serial + '/' + topics[1]};
+				const msg1 = {payload: data.m05, topic: topics[1]};
 
-				const msg2 = {payload: data.m1, topic: topics[2], 
-							  measurement: serial + '/' + topics[2]};
+				const msg2 = {payload: data.m1, topic: topics[2]};
 
-				const msg3 = {payload: data.m25, topic: topics[3], 
-							  measurement: serial + '/' + topics[3]};
+				const msg3 = {payload: data.m25, topic: topics[3]};
 
-				const msg4 = {payload: data.m5, topic: topics[4], 
-							  measurement: serial + '/' + topics[4]};
+				const msg4 = {payload: data.m5, topic: topics[4]};
 
-				const msg5 = {payload: data.m10, topic: topics[5], 
-							  measurement: serial + '/' + topics[5]};
+				const msg5 = {payload: data.m10, topic: topics[5]};
 
 				node.status({ fill:"green", shape:"dot", text: "reading"});
 				node.send([ msg0, msg1, msg2, msg3, msg4, msg5]);
@@ -486,16 +471,13 @@ module.exports = function(RED) {
 			const topics = ["temperature", "humidity", "pressure"];
 
 			const msg0 = {payload: msg.payload.temperature_C, 
-						  topic: topics[0], 
-						  measurement: serial + '/' + topics[0]};
+						  topic: topics[0]};
 
 			const msg1 = {payload: msg.payload.humidity, 
-						  topic: topics[1], 
-						  measurement: serial + '/' + topics[1]};
+						  topic: topics[1]}; 
 
 			const msg2 = {payload: msg.payload.pressure_hPa, 
-						  topic: topics[2], 
-						  measurement: serial + '/' + topics[2]};
+						  topic: topics[2]};
 
 			node.send([msg0, msg1, msg2]);
 		});
