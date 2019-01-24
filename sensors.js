@@ -487,9 +487,23 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config);
 		const node = this; 
+		var topicMap = new Map();
+		/* add timeout logic to ratelimit everything here*/ 
 
 		node.log(config.name);
 		node.handle = RED.nodes.getNode(config.handle);
+
+		function sendIt ()
+		{
+			for ( var value of topicMap.values())
+			{
+				node.send(value);
+			}
+
+			topicMap.clear();
+			node.log("sent output, waiting 30 seconds!");
+			setTimeout(sendIt, 30000);
+		}
 
 		node.on('input', function(msg)
 		{
@@ -505,9 +519,11 @@ module.exports = function(RED) {
 			out.payload = [fields, tags];
 			out.url =  "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial;
 
-			node.send(out);
+			topicMap.set( msg.topic, out);
 			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial});
 		});
+
+		sendIt();
 	}
 
 
