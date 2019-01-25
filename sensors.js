@@ -1,6 +1,7 @@
 var SerialPort 	= require('serialport');
 var gpio     	= require('rpi-gpio');
-var serialPoll = require('./serialPoll.js');
+var serialPoll	= require('./serialPoll.js');
+var influx		= require('influx');
 
 
 
@@ -487,7 +488,21 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config);
 		const node = this; 
+
 		var topicMap = new Map();
+		var client = new influx.InfluxDB(
+				{
+					hosts: [{
+						host: "66.228.55.221".
+						port: "8086",
+						protocol: "http",
+						options: {}
+						}
+						],
+						database: "db0", 
+						username: "user", 
+						password: "ciwUkZ41xCBkFklUK54da"
+				});
 		/* add timeout logic to ratelimit everything here*/ 
 
 		node.log(config.name);
@@ -495,10 +510,11 @@ module.exports = function(RED) {
 
 		function sendIt ()
 		{
-			for ( var value of topicMap.values())
-			{
-				node.send(value);
-			}
+
+			client.writePoints(topicMap.values()).catch(function(err)
+					{
+						node.error(err,msg);
+						});
 
 			topicMap.clear();
 			node.log("sent output, waiting 30 seconds!");
@@ -510,16 +526,13 @@ module.exports = function(RED) {
 			var out = {}; 
 
 			out.measurement = msg.topic; 
-			out.topic = msg.topic; 
-
-			const fields = {value: msg.payload};
-			const tags = {serial: node.handle.hardwareSerial, 
+			out.fields = {value: msg.payload};
+			out.tags   = {serial: node.handle.hardwareSerial, 
 						  geohash: "8e9"};
-			
-			out.payload = [fields, tags];
+			out.timeStamp = new Date();
 			out.url =  "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial;
-
 			topicMap.set( msg.topic, out);
+
 			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial});
 		});
 
