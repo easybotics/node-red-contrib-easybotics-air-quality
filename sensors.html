@@ -1,5 +1,5 @@
 <script type="text/javascript">
-	RED.nodes.registerType('mux-handle', 
+	RED.nodes.registerType('sensor-manager', 
 		{
 			category: 'config', 
 			defaults: 
@@ -13,11 +13,11 @@
 			},
 
 			icon: "arrow-in.png", 
-			label: "MUX HANDLE",
+			label: "Sensor Manager",
 		});
 </script>
 
-<script type="text/x-red" data-template-name="mux-handle">
+<script type="text/x-red" data-template-name="sensor-manager">
 	<p>
 		<b> auto calibration:</b> <br>
 		auto calibration on the MHZ19 C02 sensor pins the lowest value read in 24 hours to 400ppm <br> 
@@ -34,7 +34,7 @@
 	</div>
 </script>
 
-<script type="text/x-red" data-help-name="mux-handle">
+<script type="text/x-red" data-help-name="sensor-manager">
 	<p>
 		<b> Version 1.0, I bet it crashes if it can't get a hold of its serial port... </b>
 	</p> 
@@ -48,7 +48,7 @@
 		defaults: 
 		{
 			name: {value:""},
-            handle: { type:'mux-handle', required:true},
+            handle: { type:'sensor-manager', required:true},
 		},
 		inputs: 1, 
 		outputs: 1,
@@ -87,7 +87,7 @@
 		defaults: 
 		{
 			name: {value:""},
-            handle: { type:'mux-handle', required:true},
+            handle: { type:'sensor-manager', required:true},
 		},
 		inputs: 0, 
 		outputs: 3,
@@ -127,7 +127,7 @@
 		defaults: 
 		{
 			name: {value:""},
-            handle: { type:'mux-handle', required:true},
+            handle: { type:'sensor-manager', required:true},
 		},
 		inputs: 0, 
 		outputs: 6,
@@ -199,37 +199,32 @@
 </script>
 
 <script type="text/javascript">
-	RED.nodes.registerType('database-format', 
+	RED.nodes.registerType('publish-to-influxdb', 
 	{
 		category: 'Air Quality', 
 		color: '#C1FF40', 
 		defaults:
 		{
 			name: {value:""}, 
-			handle: {type: 'mux-handle', required:true},
 		},
 		inputs: 1, 
 		outputs: 1, 
 		icon: "arrow-in.png", 
 		label: function()
 		{
-			return this.name || "Database Format";
+			return this.name || "Publish to Influxdb/Grafana";
 		},
 	});
 </script>
 
-<script type="text/x-red" data-template-name="database-format">
+<script type="text/x-red" data-template-name="publish-to-influxdb">
 	<div class = "form-row">
 		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
 		<input type='text' id='node-input-name'/>
 	</div>
-	<div class='form-row'>
-		<label for="node-config-input-handle"><i class='fa fa-tag'></i> Handle</label>
-		<input type='text' id='node-input-handle'/>
-	</div>
 </script>
 
-<script type="text/x-red" data-help-name="database-format">
+<script type="text/x-red" data-help-name="publish-to-influxdb">
 	<p>
 	Takes input from any air-quality sensor nodes (BME-parse, PM, C02), and formats it for use in the easybotics grafana database 
 
