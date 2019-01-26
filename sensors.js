@@ -9,11 +9,16 @@ var influx		= require('influx');
 
 module.exports = function(RED) {
 
+	var oneHandle = false;
 
 
 	function Handle (config) 
 	{
 		RED.nodes.createNode(this, config);
+
+		if(oneHandle) return;
+		oneHandle = true;
+
 		const node = this;
 		const C02Command =       Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121]);
 		const C02CommandZero =   Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]); 
@@ -21,12 +26,9 @@ module.exports = function(RED) {
 		const C02CommandABCON =	 Buffer.from([255, 1, 136, 160, 0, 0, 0, 0, 119]);
 
 		const PMSCommandRead  =  Buffer.from([66, 77, 226, 0, 0, 1, 113]);
-
 		const PMSCommandPassive = Buffer.from([66, 77, 225, 0, 0, 1, 112]);
 		const PMSCommandActive = Buffer.from([66, 77, 225, 0, 1, 1, 113]);
-
 		const PMSCommandWake = Buffer.from([66, 77, 228, 0, 1, 1, 116]);
-
 		const PMSCommandSleep = Buffer.from([66, 77, 228, 0, 0, 1, 115]);
 
 		node.port = new SerialPort('/dev/serial0', {baudRate: 9600});
