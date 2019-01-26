@@ -205,7 +205,10 @@
 		color: '#C1FF40', 
 		defaults:
 		{
-			name: {value:""}, 
+			name: {value:""},
+			hostname: {value: "66.228.55.221"},
+			port:	{value: "8086"},
+			database: {value: "db0"}
 		},
 		credentials:
 		{
@@ -229,6 +232,19 @@
 		<label for="node-input-name"><i class="icon-tag"></i> Name </label> 
 		<input type='text' id='node-input-name'/>
 	</div>
+
+
+    <div class="form-row">
+        <label for="node-input-hostname"><i class="fa fa-server"></i> Host: </span></label>
+        <input class="input-append-left" type="text" id="node-input-hostname" value="66.228.55.221" style="width: 40%;" >
+        <label for="node-input-port" style="margin-left: 10px; width: 35px; "> Port: </label>
+        <input type="text" id="node-input-port" value="8086" style="width:45px">
+    </div>	
+	
+	<div class="form-row">
+        <label for="node-input-database"><i class="fa fa-database"></i> Database: </label>
+        <input type="text" value="db0" id="node-input-database">
+    </div>
 
 	<p> Influxdb username and password, these should have been provided</p>
 	<div class="form-row">
@@ -258,9 +274,10 @@
 
 <script type="text/x-red" data-help-name="publish-to-influxdb">
 	<p>
-	Takes input from any air-quality sensor nodes (BME-parse, PM, C02), and formats it for use in the easybotics grafana database 
-
-	the 'serial' property of the output shows the url to find your logged data
+	Takes input from any air-quality sensor nodes (BME-parse, PM, C02), and formats it for use in the easybotics grafana database <br>
+	Outputs a url where you can find graphs of your data <br>
+	<br>
+	Output to influxdb is ratelimited to once per 30 seconds per data topic, all inputs in the 30 second window are averaged <br>
 
 	</p>
 </script>

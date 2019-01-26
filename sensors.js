@@ -495,28 +495,36 @@ module.exports = function(RED) {
 		const password = node.credentials.password;
 		const geohash  = node.credentials.geohash;
 
-		node.log("username " + username);
-		node.log("password "+ password);
-		node.log("geohash: " + geohash);
+		const host = config.hostname; 
+		const port = config.port;
+		const database = config.database;
 
+		node.log(host + ' ' + port + ' ' + database);
+
+		var client; 
 		var topicMap = new Map();
-		var client = new influx.InfluxDB(
-				{
-					hosts: [{
-						host: "66.228.55.221",
-						port: "8086",
-						protocol: "http",
-						options: {}
-						}
-						],
+	
+		if(host && port && database)
+		{
+			var client = new influx.InfluxDB(
+					{
+						hosts: [{
+							host: host,
+							port: port,
+							protocol: "http",
+							options: {}
+							}
+							],
 
-						database: "db0", 
-						username:  username, 
-						password:  password 
-				});
-
-		node.log(config.name);
-		node.handle = RED.nodes.getNode(config.handle);
+							database:  database, 
+							username:  username, 
+							password:  password 
+					});
+		}
+		else
+		{
+			node.error("database not setup, missing configuration");
+		}
 
 		function sendIt ()
 		{
