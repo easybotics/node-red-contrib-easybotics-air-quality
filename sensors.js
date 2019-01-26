@@ -547,6 +547,8 @@ module.exports = function(RED) {
 
 		node.on('input', function(msg)
 		{
+			const urlA = "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + serial;
+
 			if( !(username && password && geohash)) 
 			{
 				node.error("missing credentials, or geohash")
@@ -569,9 +571,10 @@ module.exports = function(RED) {
 			}
 
 			topicMap.set( msg.topic, out);
+			node.send({payload: urlA});
 
 
-			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + serial});
+			node.status({fill:"green", shape:"dot", text: urlA});
 		});
 
 		sendIt();
