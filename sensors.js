@@ -384,6 +384,7 @@ module.exports = function(RED) {
 				var msg = {}; 
 				msg.payload = parseInt(data);
 				msg.topic = "C02";
+				msg.serial = node.handle.hardwareSerial;
 
 				node.send(msg);
 				node.status({ fill:"green", shape:"dot", text: "C02: " + data});
@@ -488,12 +489,13 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config);
 		const node = this; 
+		const serial = serialPoll.hardwareSerial();
 
 		var topicMap = new Map();
 		var client = new influx.InfluxDB(
 				{
 					hosts: [{
-						host: "66.228.55.221".
+						host: "66.228.55.221",
 						port: "8086",
 						protocol: "http",
 						options: {}
@@ -503,7 +505,6 @@ module.exports = function(RED) {
 						username: "user", 
 						password: "ciwUkZ41xCBkFklUK54da"
 				});
-		/* add timeout logic to ratelimit everything here*/ 
 
 		node.log(config.name);
 		node.handle = RED.nodes.getNode(config.handle);
@@ -511,10 +512,18 @@ module.exports = function(RED) {
 		function sendIt ()
 		{
 
-			client.writePoints(topicMap.values()).catch(function(err)
-					{
+			var points = [];
+			for( var v of topicMap.values())
+			{
+				v.fields.value /= v.increment;
+				node.log(v.increment);
+				points.push(v);
+			}
+
+			client.writePoints(points).catch(function(err)
+			{
 						node.error(err,msg);
-						});
+			});
 
 			topicMap.clear();
 			node.log("sent output, waiting 30 seconds!");
@@ -527,23 +536,32 @@ module.exports = function(RED) {
 
 			out.measurement = msg.topic; 
 			out.fields = {value: msg.payload};
-			out.tags   = {serial: node.handle.hardwareSerial, 
-						  geohash: "8e9"};
+			out.tags   = {serial: serial,  geohash: "8e9"};
 			out.timeStamp = new Date();
-			out.url =  "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial;
+			out.increment = 1;
+
+			const prev = topicMap.get(msg.topic);
+			if(prev)
+			{
+				out.increment = prev.increment + 1;
+				node.log("nicrement: " + out.increment);
+				out.fields.value += prev.fields.value
+			}
+
 			topicMap.set( msg.topic, out);
 
-			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + node.handle.hardwareSerial});
+
+			node.status({fill:"green", shape:"dot", text: "https://grafana.easybotics.com/dashboard/script/newTest.js?serial=" + serial});
 		});
 
 		sendIt();
 	}
 
 
-	RED.nodes.registerType("mux-handle", Handle);
+	RED.nodes.registerType("sensor-manager", Handle);
 	RED.nodes.registerType("MHZ19-C02-Sensor", C02Sensor);
 	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
 	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
 	RED.nodes.registerType("BME280-Parse", BME280Parse);
-	RED.nodes.registerType("database-format", dataFormat);
+	RED.nodes.registerType("publish-to-influxdb", dataFormat);
 }
