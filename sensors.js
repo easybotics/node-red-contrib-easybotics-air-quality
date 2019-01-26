@@ -491,6 +491,14 @@ module.exports = function(RED) {
 		const node = this; 
 		const serial = serialPoll.hardwareSerial();
 
+		const username = node.credentials.username;
+		const password = node.credentials.password;
+		const geohash  = node.credentials.geohash;
+
+		node.log("username " + username);
+		node.log("password "+ password);
+		node.log("geohash: " + geohash);
+
 		var topicMap = new Map();
 		var client = new influx.InfluxDB(
 				{
@@ -501,9 +509,10 @@ module.exports = function(RED) {
 						options: {}
 						}
 						],
+
 						database: "db0", 
-						username: "user", 
-						password: "ciwUkZ41xCBkFklUK54da"
+						username:  username, 
+						password:  password 
 				});
 
 		node.log(config.name);
@@ -516,7 +525,6 @@ module.exports = function(RED) {
 			for( var v of topicMap.values())
 			{
 				v.fields.value /= v.increment;
-				node.log(v.increment);
 				points.push(v);
 			}
 
@@ -526,17 +534,22 @@ module.exports = function(RED) {
 			});
 
 			topicMap.clear();
-			node.log("sent output, waiting 30 seconds!");
 			setTimeout(sendIt, 30000);
 		}
 
 		node.on('input', function(msg)
 		{
+			if( !(username && password && geohash)) 
+			{
+				node.error("missing credentials, or geohash")
+				return;
+			}
+
 			var out = {}; 
 
 			out.measurement = msg.topic; 
 			out.fields = {value: msg.payload};
-			out.tags   = {serial: serial,  geohash: "8e9"};
+			out.tags   = {serial: serial,  geohash: geohash};
 			out.timeStamp = new Date();
 			out.increment = 1;
 
@@ -544,7 +557,6 @@ module.exports = function(RED) {
 			if(prev)
 			{
 				out.increment = prev.increment + 1;
-				node.log("nicrement: " + out.increment);
 				out.fields.value += prev.fields.value
 			}
 
@@ -563,5 +575,13 @@ module.exports = function(RED) {
 	RED.nodes.registerType("PMS5003-PM-Reading", PMSSensor);
 	RED.nodes.registerType("PMS5003-Particle-Concentration", PMSInstantSensor);
 	RED.nodes.registerType("BME280-Parse", BME280Parse);
-	RED.nodes.registerType("publish-to-influxdb", dataFormat);
+
+	RED.nodes.registerType("publish-to-influxdb", dataFormat, 
+			{
+				credentials: {
+					username: {type: "text"},
+					password: {type: "password"},
+					geohash:  {type: "text"}
+					}
+			});
 }

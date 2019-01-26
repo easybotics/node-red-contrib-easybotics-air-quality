@@ -207,6 +207,13 @@
 		{
 			name: {value:""}, 
 		},
+		credentials:
+		{
+			username: {type: "text"}, 
+			password: {type: "password"},
+			geohash:  {type: "text"}
+		},
+
 		inputs: 1, 
 		outputs: 1, 
 		icon: "arrow-in.png", 
@@ -219,9 +226,34 @@
 
 <script type="text/x-red" data-template-name="publish-to-influxdb">
 	<div class = "form-row">
-		<label for="node-config-input-name"><i class="icon-tag"></i> Name </label> 
+		<label for="node-input-name"><i class="icon-tag"></i> Name </label> 
 		<input type='text' id='node-input-name'/>
 	</div>
+
+	<p> Influxdb username and password, these should have been provided</p>
+	<div class="form-row">
+		<label for="node-input-username"><i class="icon-tag"></i> Username</label>
+		<input type="text" id="node-input-username">
+	</div>
+	<div class="form-row">
+		<label for="node-input-password"><i class="icon-tag"></i> Password</label>
+		<input type="password", id="node-input-password">
+	</div>
+
+	<p> Geohash is a code that represents a location on earth. <br>
+		This website <a href="http://geohash.gofreerange.com/"> here</a> can be used to generate a geohash<br>
+		Be mindful of how many characters you use. <br>
+		A 4 digit code is about the area of a city <br>
+		A 5 digit code is about the area of a small town <br>
+		A 6 digit code narrows down to the street or even building <br>
+		If you care about security, and don't need a specific location, don't go over 4 or 5 digits.<br>
+	</p>
+
+	<div class="form-row">
+		<label for="node-input-geohash"><i class="icon-tag"></i>Geohash</label>
+		<input type="text", id="node-input-geohash">
+	</div>
+
 </script>
 
 <script type="text/x-red" data-help-name="publish-to-influxdb">
