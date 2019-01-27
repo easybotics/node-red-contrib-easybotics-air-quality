@@ -4,13 +4,9 @@ var serialPoll	= require('./serialPoll.js')
 var influx		= require('influx')
 
 
-
-
-
 module.exports = function(RED) {
 
 	var oneHandle = false
-
 
 	function Handle (config) 
 	{
@@ -357,7 +353,6 @@ module.exports = function(RED) {
 		}) 
 	}
 
-
 	function C02Sensor (config) 
 	{
 		RED.nodes.createNode(this, config)
@@ -419,7 +414,6 @@ module.exports = function(RED) {
 			node.status({ fill:'red', shape:'dot', text: 'timeout..'})
 		}
 	}
-
 
 	function PMSInstantSensor (config) 
 	{
@@ -567,7 +561,6 @@ module.exports = function(RED) {
 
 		sendIt()
 	}
-
 
 	RED.nodes.registerType('sensor-manager', Handle)
 	RED.nodes.registerType('MHZ19-C02-Sensor', C02Sensor)
