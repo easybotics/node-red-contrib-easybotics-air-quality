@@ -12,7 +12,11 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config)
 
-		if(oneHandle) return
+		if(oneHandle)
+		{
+			this.error('only one sensor manager is supported per device')
+			return
+		}
 		oneHandle = true
 
 		const node = this
