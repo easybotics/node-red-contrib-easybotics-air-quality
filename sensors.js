@@ -51,6 +51,7 @@ module.exports = function(RED) {
 
 		node.on('close', function() 
 		{
+			oneHandle = false
 			node.log('CLOSING ')
 			node.port.close()
 			node.ending = true
@@ -381,6 +382,7 @@ module.exports = function(RED) {
 				msg.payload = parseInt(data)
 				msg.topic = 'C02'
 				msg.serial = node.handle.hardwareSerial
+				msg.grafana = true //flag so the publish to grafana node doesn't let through garbage that destroys our databse
 
 				node.send(msg)
 				node.status({ fill:'green', shape:'dot', text: 'C02: ' + data})
@@ -405,9 +407,9 @@ module.exports = function(RED) {
 			{
 				const topics = ['PM1.0', 'PM2.5', 'PM10']
 
-				const msg0 = {payload: data.pm10, topic: topics[0]}
-				const msg1 = {payload: data.pm25, topic: topics[1]}
-				const msg2 = {payload: data.pm100, topic: topics[2]}
+				const msg0 = {grafana: true, payload: data.pm10, topic: topics[0]}
+				const msg1 = {grafana: true, payload: data.pm25, topic: topics[1]}
+				const msg2 = {grafana: true, payload: data.pm100, topic: topics[2]}
 
 				node.status({ fill:'green', shape:'dot', text: 'reading'})
 				node.send([ msg0, msg1, msg2])
@@ -434,12 +436,12 @@ module.exports = function(RED) {
 				const topics = ['Particles>0.3um', 'Particles>0.5um', 'Particles>1.0um', 
 								'Particles>2.5um', 'Particles>5um', 'Particles>10um']
 
-				const msg0 = {payload: data.m03, topic: topics[0]}
-				const msg1 = {payload: data.m05, topic: topics[1]}
-				const msg2 = {payload: data.m1, topic: topics[2]}
-				const msg3 = {payload: data.m25, topic: topics[3]}
-				const msg4 = {payload: data.m5, topic: topics[4]}
-				const msg5 = {payload: data.m10, topic: topics[5]}
+				const msg0 = {grafana: true, payload: data.m03, topic: topics[0]}
+				const msg1 = {grafana: true, payload: data.m05, topic: topics[1]}
+				const msg2 = {grafana: true, payload: data.m1, topic: topics[2]}
+				const msg3 = {grafana: true, payload: data.m25, topic: topics[3]}
+				const msg4 = {grafana: true, payload: data.m5, topic: topics[4]}
+				const msg5 = {grafana: true, payload: data.m10, topic: topics[5]}
 
 				node.status({ fill:'green', shape:'dot', text: 'reading'})
 				node.send([ msg0, msg1, msg2, msg3, msg4, msg5])
@@ -459,13 +461,13 @@ module.exports = function(RED) {
 		{
 			const topics = ['temperature', 'humidity', 'pressure']
 
-			const msg0 = {payload: msg.payload.temperature_C, 
+			const msg0 = {grafana: true, payload: msg.payload.temperature_C, 
 						  topic: topics[0]}
 
-			const msg1 = {payload: msg.payload.humidity, 
+			const msg1 = {grafana: true, payload: msg.payload.humidity, 
 						  topic: topics[1]} 
 
-			const msg2 = {payload: msg.payload.pressure_hPa, 
+			const msg2 = {grafana: true, payload: msg.payload.pressure_hPa, 
 						  topic: topics[2]}
 
 			node.send([msg0, msg1, msg2])
@@ -538,6 +540,13 @@ module.exports = function(RED) {
 			if( !(username && password && geohash)) 
 			{
 				node.error('missing credentials, or geohash')
+				return
+			}
+
+			if( ! msg.grafana)
+			{
+				node.error(' please only inject easybotics weather nodes into this node!')
+				node.error(' the generic "influxdb" nodes are very easy to setup if you need more diverse logging')
 				return
 			}
 
