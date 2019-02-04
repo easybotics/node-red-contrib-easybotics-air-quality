@@ -41,7 +41,6 @@ module.exports = function(RED) {
 		node.ending			= false
 		node.hardwareSerial = serialPoll.hardwareSerial()
 
-		node.log(node.hardwareSerial)
 
 		node.parser 
 
@@ -156,7 +155,6 @@ module.exports = function(RED) {
 						 pm25: buffer.readUInt8(12) * 256 + buffer.readUInt8(13), 
 						 pm100: buffer.readUInt8(14) * 256 + buffer.readUInt8(15),}
 			}
-			node.log('dumped PMS due to checksum!')
 
 			return undefined 
 		}
@@ -175,7 +173,6 @@ module.exports = function(RED) {
 						 m5: buffer.readUInt8(24) * 256 + buffer.readUInt8(25), 
 						 m10: buffer.readUInt8(26) * 256 + buffer.readUInt8(27), }
 			}
-			 node.log('dumped PMS due to checksum!')
 
 			return undefined 
 		}
@@ -190,7 +187,6 @@ module.exports = function(RED) {
 					bString += (',' + b)
 
 
-				node.log('dumped c02 due to checksum')
 				node.log(bString)
 				
 				return undefined
@@ -280,7 +276,6 @@ module.exports = function(RED) {
 					n.output(undefined)
 
 			
-				node.log('PMS timeout')
 				C02Listen()
 			}, 5000)
 		}
@@ -313,7 +308,6 @@ module.exports = function(RED) {
 				for(const n of node.C02Register)
 					n.output(undefined)
 
-				node.log('c02 timeout')
 				PMSListen()
 			}, 5000)
 		}
