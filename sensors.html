@@ -215,7 +215,8 @@
 		{
 			username: {type: "text"}, 
 			password: {type: "password"},
-			geohash:  {type: "text"}
+			geohash:  {type: "text"},
+			location_name: {type: "location_name"}
 		},
 
 		inputs: 1, 
@@ -269,6 +270,20 @@
 	<div class="form-row">
 		<label for="node-input-geohash"><i class="icon-tag"></i>Geohash</label>
 		<input type="text", id="node-input-geohash">
+	</div>
+
+	<p> Location name is an optional field that is used to tag your data for reading later. <br>
+		By default we use your raspberry-pi's unique serial number, which is a string of random letters <br>
+		But using a Location Name makes things more user-friendly <br>
+		For example, you could access your data from aqeasy.com/waiakea vs aqeasy.com/Ahgf992 <br>
+		<b> Location name must be unique, or data will mix together with anyone else using that name </b><br>
+		Don't use a name like 'school', or 'house' that someoone else might use <br>
+		If you aren't sure it'll be unique, just leave this field blank 
+	</p>
+
+	<div class="form-row">
+		<label for="node-input-location_name"><i class="icon-tag"></i>Location Name</label>
+		<input type="text", id="node-input-location_name">
 	</div>
 
 </script>
