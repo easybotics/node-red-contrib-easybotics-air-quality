@@ -472,7 +472,7 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config)
 		const node = this 
-		const serial = serialPoll.shortSerial()
+		const serial = node.credentials.location_name ? node.credentials.location_name : serialPoll.shortSerial()
 
 		const username = node.credentials.username
 		const password = node.credentials.password
@@ -507,6 +507,11 @@ module.exports = function(RED) {
 		{
 			node.error('database not setup, missing configuration')
 		}
+		if( !(username && password && geohash)) 
+		{
+			node.error('missing credentials, or geohash')
+		}
+
 
 		function sendIt ()
 		{
@@ -529,11 +534,10 @@ module.exports = function(RED) {
 
 		node.on('input', function(msg)
 		{
-			const urlA = 'https://grafana.easybotics.com/dashboard/script/newTest.js?serial=' + serial
+			const urlA = 'aqeasy.com/' + serial
 
 			if( !(username && password && geohash)) 
 			{
-				node.error('missing credentials, or geohash')
 				return
 			}
 
@@ -581,7 +585,8 @@ module.exports = function(RED) {
 			{
 				username: {type: 'text'},
 				password: {type: 'password'},
-				geohash:  {type: 'text'}
+				geohash:  {type: 'text'},
+				location_name: {type: 'text'}
 			}
 		})
 }
