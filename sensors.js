@@ -476,7 +476,7 @@ module.exports = function(RED) {
 
 		const username = node.credentials.username
 		const password = node.credentials.password
-		const geohash  = node.credentials.geohash
+		const geohash  = node.credentials.geohash ? node.credentials.geohash : "nwc"
 
 		const host = config.hostname 
 		const port = config.port
