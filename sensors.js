@@ -472,7 +472,7 @@ module.exports = function(RED) {
 	{
 		RED.nodes.createNode(this, config)
 		const node = this 
-		const serial = serialPoll.hardwareSerial()
+		const serial = serialPoll.shortSerial()
 
 		const username = node.credentials.username
 		const password = node.credentials.password
@@ -548,7 +548,7 @@ module.exports = function(RED) {
 
 			out.measurement = msg.topic 
 			out.fields = {value: msg.payload}
-			out.tags   = {serial: serial,  geohash: geohash}
+			out.tags   = {serial: '/' + serial,  geohash: geohash}
 			out.timeStamp = new Date()
 			out.increment = 1
 
