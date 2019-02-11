@@ -534,7 +534,7 @@ module.exports = function(RED) {
 
 		node.on('input', function(msg)
 		{
-			const urlA = 'aqeasy.com/' + serial
+			const urlA = 'g.aqeasy.com/' + serial
 
 			if( !(username && password && geohash)) 
 			{
