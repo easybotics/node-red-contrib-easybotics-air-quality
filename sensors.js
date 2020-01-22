@@ -32,6 +32,9 @@ module.exports = function(RED) {
 		const PMSCommandSleep = Buffer.from([66, 77, 228, 0, 0, 1, 115])
 
 		node.port = new SerialPort('/dev/serial0', {baudRate: 9600})
+		node.port.on('error', function(err) {
+			  console.log('Error: ', err.message)
+			})
 		
 		node.autoConfigC02	= (config.autoConfigC02 || 'man') 
 		node.C02Register	= new Set()
@@ -476,7 +479,7 @@ module.exports = function(RED) {
 
 		const username = node.credentials.username
 		const password = node.credentials.password
-		const geohash  = node.credentials.geohash ? node.credentials.geohash : "nwc"
+		const geohash  = node.credentials.geohash ? node.credentials.geohash : 'nwc'
 
 		const host = config.hostname 
 		const port = config.port
