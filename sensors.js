@@ -8,10 +8,22 @@ module.exports = function(RED) {
 
 	var oneHandle = false
 
+	/* 
+	 * Handle is a config node that handles communication with all the sensors 
+	 * it asynchronosly switches the serial duplexer, and talks to the sensors one at a time
+	 * then it sends the data to each individual sensor node so they can report it
+	 *
+	 * Handle is a constructor with lots of callbacks, you have to look carefully
+	 * for the actual function calls that setup and start the async chain
+	 */
+
 	function Handle (config) 
 	{
 		RED.nodes.createNode(this, config)
 
+		/* we use a global variable to check if more than one config node exists
+		 * probably a bad idea and dumb 
+		 */ 
 		if(oneHandle)
 		{
 			this.error('only one sensor manager is supported per device')
@@ -20,6 +32,7 @@ module.exports = function(RED) {
 		oneHandle = true
 
 		const node = this
+		/* some command strings the sensors take */ 
 		const C02Command =       Buffer.from([255, 1, 134, 0, 0, 0, 0, 0, 121])
 		const C02CommandZero =   Buffer.from([255, 1, 135, 0, 0, 0, 0, 0, 120]) 
 		const C02CommandABCOFF = Buffer.from([255, 1, 136, 0, 0, 0, 0, 0, 119])
@@ -31,12 +44,19 @@ module.exports = function(RED) {
 		const PMSCommandWake = Buffer.from([66, 77, 228, 0, 1, 1, 116])
 		const PMSCommandSleep = Buffer.from([66, 77, 228, 0, 0, 1, 115])
 
+		/* 
+		 * open a serial port
+		 * this should have exception handling or it could break flows 
+		 * need to test what happens if cant open serial 
+		 */ 
 		node.port = new SerialPort('/dev/serial0', {baudRate: 9600})
 		node.port.on('error', function(err) {
 			  console.log('Error: ', err.message)
 			})
 		
 		node.autoConfigC02	= (config.autoConfigC02 || 'man') 
+
+		/*this is where we keep track of nodes that want to receive C02 data or PMS data*/
 		node.C02Register	= new Set()
 		node.PMSRegister	= new Set()
 		node.PMSInstantRegister = new Set()
@@ -44,13 +64,10 @@ module.exports = function(RED) {
 		node.ending			= false
 		node.hardwareSerial = serialPoll.hardwareSerial()
 
-
-		node.parser 
-
-
 		var acc = Buffer.from([])
 		var context = 0
 
+		/* this is a registered event that fires when the flow turns off*/ 
 		node.on('close', function() 
 		{
 			oneHandle = false
@@ -59,6 +76,8 @@ module.exports = function(RED) {
 			node.ending = true
 		})
 
+
+		/* try and flush data from the serial port, probably doesn't work */ 
 		function ghettoFlush ()
 		{
 			if (! (node.port.read())) 
@@ -72,8 +91,10 @@ module.exports = function(RED) {
 			}
 		}
 
-		/*
-		 * switches the Serial multiplexer to 0,0, flushes some buffers, and runs a callback 
+		/* the muxA and muxB functions
+		 * 1. switch the serial multiplexer to other serial line
+		 * 2. try and flush the serial buffer
+		 * 3. run a supplied callback 
 		 */ 
 		function muxA (callback)
 		{
@@ -109,6 +130,7 @@ module.exports = function(RED) {
 			})
 		}
 
+		/* tries to calculate a PMSChecksum in a buffer, and returns the result*/ 
 		function PMSChecksum (buffer) 
 		{
 			var output = 0 
@@ -122,6 +144,7 @@ module.exports = function(RED) {
 			return output 
 		}
 
+		/* tries to calculate a c02 sensor checksum and return the result */ 
 		function C02Checksum (buffer) 
 		{
 			const overFlow = function (i)
@@ -162,13 +185,16 @@ module.exports = function(RED) {
 			return undefined 
 		}
 
+		/* parse a reading from the PMS sensor */ 
 		function parsePMSInstant (buffer) 
 		{
+			/* first calculate the checksum and check if it matches with the one sent by the sensor*/ 
 			const calcCheck =  PMSChecksum(buffer) 
 			const readCheck = (buffer.readUInt8(30) * 256  + buffer.readUInt8(31))
 
 			if(calcCheck == readCheck)
 			{
+				/* if the checksum is correct, return data*/ 
 				return { m03: buffer.readUInt8(16) * 256 + buffer.readUInt8(17), 
 						 m05: buffer.readUInt8(18) * 256 + buffer.readUInt8(19), 
 						 m1: buffer.readUInt8(20) * 256 + buffer.readUInt8(21),
@@ -219,6 +245,7 @@ module.exports = function(RED) {
 			}
 		}
 
+		/* parses a buffer from the PMS sensor, and returns the data */ 
 		function PMSStreamParse (data)
 		{
 			acc = Buffer.concat( [acc, data])
@@ -291,12 +318,15 @@ module.exports = function(RED) {
 
 			muxB( function()
 			{
+				/* checks a global flag to see if we need to zero the c02 sensor
+				 * and then sends the c02 zero command down the serial */ 
 				if(node.nextZero) 
 				{
 					node.nextZero = false 
 					node.port.write(C02CommandZero) 
 				}
 				
+				/* sends the 'read C02' command*/ 
 				node.port.write(C02Command, function()
 				{
 					node.switchA = true
@@ -355,14 +385,22 @@ module.exports = function(RED) {
 		}) 
 	}
 
+	/*
+	 * node for C02 sensor
+	 * registers itself with the config node, and then receives data from it 
+	 * even if you have 100 C02 nodes, the config node is only checking the sensor once, not 100 times
+	 */ 
 	function C02Sensor (config) 
 	{
 		RED.nodes.createNode(this, config)
 		const node = this
 
+		//retrieve a reference to the config node, and register this node as a C02 reader 
 		node.handle = RED.nodes.getNode(config.handle)
 		node.handle.C02Register.add(node)
 
+		//users can zero the C02 sensor through the node
+		//tells the config node to zero the c02 sensor 
 		node.on('input', function (msg) 
 		{
 			if(msg.payload == 'zero')
