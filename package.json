@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-easybotics-air-quality",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "description": "use a serial mux to read multiple atmospheric sensors on the raspi, in a user friendly way",
   "keywords": [
     "raspberry",
@@ -17,7 +17,7 @@
   "dependencies": {
     "influx": "^5.0.7",
     "rpi-gpio": "^2.1.2",
-    "serialport": "^6.2.2"
+    "serialport": "^9.0.6"
   },
   "homepage": "https://github.com/keptan/node-red-contrib-easybotics-air-quality",
   "bugs": "https://github.com/keptan",
